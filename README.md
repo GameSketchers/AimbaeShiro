@@ -1,7 +1,7 @@
 <h1 align="center">🌸 AimbaeShiro – Krunker.IO Cheat</h1>
 
 <p align="center">
-    <img src="https://i.imgur.com/apggihX.jpeg" alt="AimbaeShiro Banner" style="max-width: 100%;">
+    <img src="./Assets/banner.jpeg" alt="AimbaeShiro Banner" style="max-width: 100%;">
 </p>
 
 <p align="center">
