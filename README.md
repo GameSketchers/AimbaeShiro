@@ -1,2 +1,3 @@
-# AimbaeShiro
-Aimbot with Wall-Check, Bhop, Dynamic Skeleton ESP, Box ESP &amp; more with a gorgeous, fully redesigned Anime UI. By anonimbiri.
+The cheat menu button works within the game. First, enter the game and press `F2`.
+
+![](https://i.imgur.com/JExAQYt.png)
