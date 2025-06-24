@@ -194,15 +194,16 @@
             fontLink.rel = 'stylesheet';
             document.head.appendChild(fontLink);
 
+            // GÜNCELLENEN CSS KODU
             const menuCSS = `
-                .anonimbiri-menu-container { font-family: 'Orbitron', monospace; position: fixed; width: 420px; background: rgba(10, 10, 10, 0.95); border: 2px solid #ff0080; border-radius: 15px; box-shadow: 0 0 30px rgba(255, 0, 128, 0.5), inset 0 0 20px rgba(255, 0, 128, 0.1); backdrop-filter: blur(10px); animation: anonimbiri-menuGlow 2s ease-in-out infinite alternate, anonimbiri-slideIn 0.5s ease-out; user-select: none; z-index: 1000; display: none; opacity: 0; transition: opacity 0.3s ease-out, transform 0.3s ease-out; }
+                .anonimbiri-menu-container { font-family: 'Orbitron', monospace; position: fixed; width: 90vw; max-width: 500px; background: rgba(10, 10, 10, 0.95); border: 2px solid #ff0080; border-radius: 15px; box-shadow: 0 0 30px rgba(255, 0, 128, 0.5), inset 0 0 20px rgba(255, 0, 128, 0.1); backdrop-filter: blur(10px); animation: anonimbiri-menuGlow 2s ease-in-out infinite alternate, anonimbiri-slideIn 0.5s ease-out; user-select: none; z-index: 1000; display: none; opacity: 0; transition: opacity 0.3s ease-out, transform 0.3s ease-out; }
                 .anonimbiri-menu-container.visible { display: block; opacity: 1; }
                 @keyframes anonimbiri-menuGlow { from { box-shadow: 0 0 30px rgba(255, 0, 128, 0.3), inset 0 0 20px rgba(255, 0, 128, 0.1); } to { box-shadow: 0 0 50px rgba(255, 0, 128, 0.6), inset 0 0 30px rgba(255, 0, 128, 0.2); } }
                 @keyframes anonimbiri-slideIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-                .anonimbiri-menu-header { height: 100px; background: linear-gradient(45deg, #ff0080, #ff4da6); border-radius: 13px 13px 0 0; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: grab; }
+                .anonimbiri-menu-header { height: 250px; background: linear-gradient(45deg, #ff0080, #ff4da6); border-radius: 13px 13px 0 0; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; cursor: grab; }
                 .anonimbiri-menu-header:active { cursor: grabbing; }
                 .anonimbiri-menu-header::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-image: url('https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/banner.jpeg'); background-size: cover; background-position: center; opacity: 0.8; z-index: 1; animation: anonimbiri-bannerShift 10s ease-in-out infinite; }
-                @keyframes anonimbiri-bannerShift { 0%, 100% { transform: scale(1.1) rotate(-1deg); } 50% { transform: scale(1.15) rotate(1deg); } }
+                @keyframes anonimbiri-bannerShift { 0%, 100% { transform: scale(1.05) rotate(-1deg); } 50% { transform: scale(1.1) rotate(1deg); } }
                 .anonimbiri-menu-header::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(45deg, rgba(255, 0, 128, 0.3), rgba(255, 77, 166, 0.3)); z-index: 2; }
                 .anonimbiri-tab-container { display: flex; background: rgba(20, 20, 20, 0.9); border-bottom: 1px solid #ff0080; }
                 .anonimbiri-tab { flex: 1; padding: 12px; background: rgba(30, 30, 30, 0.8); color: #ff0080; text-align: center; cursor: pointer; transition: all 0.3s ease; font-weight: 700; font-size: 12px; letter-spacing: 1px; border-right: 1px solid rgba(255, 0, 128, 0.3); position: relative; overflow: hidden; }
@@ -211,7 +212,7 @@
                 .anonimbiri-tab:last-child { border-right: none; }
                 .anonimbiri-tab:hover { background: rgba(255, 0, 128, 0.2); color: white; transform: translateY(-2px); }
                 .anonimbiri-tab.active { background: linear-gradient(45deg, #ff0080, #ff4da6); color: white; box-shadow: 0 2px 10px rgba(255, 0, 128, 0.5); }
-                .anonimbiri-tab-content { padding: 15px; max-height: 350px; overflow-y: auto; }
+                .anonimbiri-tab-content { padding: 15px; max-height: calc(100vh - 350px); min-height: 150px; overflow-y: auto; }
                 .anonimbiri-tab-pane { display: none; }
                 .anonimbiri-tab-pane.active { display: block; animation: anonimbiri-fadeIn 0.3s ease; }
                 @keyframes anonimbiri-fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
