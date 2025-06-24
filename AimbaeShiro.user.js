@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.1.3
+// @version      1.1.4
 // @description  A powerful anime-themed cheat suite with Aimbot, Wall-Check, Bhop, Skeleton & Box ESP.
 // @description:tr  Aimbot, duvar arkası kontrol, Bhop, iskelet ve kutu ESP içeren anime temalı güçlü bir hile aracı.
 // @description:ja  エイムボット、ウォールチェック、バニーホップ、スケルトン＆ボックスESPを備えたアニメ風の高機能チートツール。
@@ -29,11 +29,9 @@
 (function() {
     'use strict';
 
-    const KRUNKER_THREE = window.THREE;
-
     class KrunkerCheats {
         constructor() {
-            this.THREE = window.THREE || KRUNKER_THREE;
+            this.THREE = window.THREE;
             if (!this.THREE) {
                 console.error("🌸 Anime Cheats: THREE.js not loaded! Waiting...");
                 setTimeout(() => this.initializeCheats(), 1000);
@@ -43,19 +41,17 @@
         }
 
         initializeCheats() {
-            this.THREE = window.THREE || KRUNKER_THREE;
+            this.THREE = window.THREE;
             if (!this.THREE) {
                 console.error("🌸 Anime Cheats: THREE.js failed to load after retry.");
                 return;
             }
             console.log("🌸 Anime Cheats: Initializing with THREE.js v" + this.THREE.REVISION);
 
-            this.migrateSettings();
-
             this.defaultSettings = {
                 aimbotEnabled: true,
                 aimbotOnRightMouse: false,
-                aimbotWallCheck: true, // Default ON: check for walls. Turn OFF to aim through walls.
+                aimbotWallCheck: true,
                 autoFireEnabled: false,
                 espLines: true,
                 espSkeleton: true,
@@ -98,7 +94,6 @@
             this.cameraPos = new this.THREE.Vector3();
             this.managedESP = new Map();
             this.raycaster = new this.THREE.Raycaster();
-            this.gameInputs = null;
             this.bhopLoopTimeout = null;
             this.bhopIsCrouching = false;
             this.autoFireTimer = null;
@@ -121,21 +116,6 @@
         }
 
         saveSettings(key, value) { GM_setValue(key, JSON.stringify(value)); }
-
-        migrateSettings() {
-            const oldSettings = GM_getValue('anonimbiri_anime_settings_v2', null);
-            const oldHotkeys = GM_getValue('anonimbiri_anime_hotkeys_v2', null);
-            if (oldSettings) {
-                console.log("🌸 Anime Cheats: Migrating old settings...");
-                this.saveSettings('anonimbiri_settings', JSON.parse(oldSettings));
-                GM_setValue('anonimbiri_anime_settings_v2', null);
-            }
-            if (oldHotkeys) {
-                console.log("🌸 Anime Cheats: Migrating old hotkeys...");
-                this.saveSettings('anonimbiri_hotkeys', JSON.parse(oldHotkeys));
-                GM_setValue('anonimbiri_anime_hotkeys_v2', null);
-            }
-        }
 
         attemptInjection() {
             if (this.scene) return;
@@ -162,30 +142,25 @@
             return this.originalArrayPush.apply(this, arguments);
         }
 
-        findGameInputs() {
-            if (window.inputs && Array.isArray(window.inputs) && window.inputs.length >= 10) {
-                this.gameInputs = window.inputs;
-                return true;
+        // ISTENEN SIMULASYON YÖNTEMİ
+        simulateKey(keyCode, eventType = 'keypress') {
+            const oEvent = document.createEvent('KeyboardEvent');
+            Object.defineProperty(oEvent, 'keyCode', { get: function() { return this.keyCodeVal; } });
+            Object.defineProperty(oEvent, 'which', { get: function() { return this.keyCodeVal; } });
+
+            if (oEvent.initKeyboardEvent) {
+                oEvent.initKeyboardEvent(eventType, true, true, document.defaultView, false, false, false, false, keyCode, 0);
+            } else {
+                oEvent.initKeyEvent(eventType, true, true, document.defaultView, false, false, false, false, keyCode, 0);
             }
-            return false;
+            oEvent.keyCodeVal = keyCode;
+            document.dispatchEvent(oEvent);
         }
 
-        triggerGameInput(keyOrButton, isDown) {
-            const inputMap = { 'MouseLeft': 4, 'MouseRight': 5, 'Space': 6, 'ShiftLeft': 8 };
-            const inputIndex = inputMap[keyOrButton];
-            if (this.gameInputs && typeof inputIndex !== 'undefined') {
-                this.gameInputs[inputIndex] = isDown ? 1 : 0;
-            } else {
-                 console.warn(`🌸 Anime Cheats: Using dispatchEvent fallback for ${keyOrButton}.`);
-                let event;
-                if (keyOrButton.startsWith('Mouse')) {
-                    const button = keyOrButton === 'MouseLeft' ? 0 : 2;
-                    event = new MouseEvent(isDown ? 'mousedown' : 'mouseup', { bubbles: true, cancelable: true, button: button, buttons: isDown ? (1 << button) : 0, clientX: window.innerWidth / 2, clientY: window.innerHeight / 2, isTrusted: false });
-                } else {
-                    event = new KeyboardEvent(isDown ? 'keydown' : 'keyup', { bubbles: true, cancelable: true, code: keyOrButton, key: keyOrButton.replace('Left', '').replace('Right', ''), isTrusted: false });
-                }
-                window.dispatchEvent(event);
-            }
+        simulateMouse(eventType, button) {
+            const oEvent = document.createEvent('MouseEvent');
+            oEvent.initMouseEvent(eventType, true, true, window, 0, 0, 0, 0, 0, false, false, false, false, button, null);
+            document.dispatchEvent(oEvent);
         }
 
         createGeometries() {
@@ -409,7 +384,7 @@
                     this.spacebarDown = false;
                     clearTimeout(this.bhopLoopTimeout);
                     this.bhopIsCrouching = false;
-                    this.triggerGameInput('Space', false);
+                    this.simulateKey(32, 'keyup');
                 }
                 if (Object.values(this.hotkeys).includes(e.code)) { e.preventDefault(); e.stopPropagation(); }
             }, { capture: true });
@@ -417,6 +392,7 @@
             document.getElementById('anonimbiri-closeBtn').addEventListener('click', () => this.toggleMenuVisibility());
             this.gui.querySelector('.anonimbiri-tab-container').addEventListener('click', (e) => {
                 if (e.target.classList.contains('anonimbiri-tab')) {
+                    if(window.SOUND) window.SOUND.play('select_0', 0.1);
                     const tabName = e.target.dataset.tab;
                     this.gui.querySelectorAll('.anonimbiri-tab').forEach(t => t.classList.remove('active'));
                     this.gui.querySelectorAll('.anonimbiri-tab-pane').forEach(p => p.classList.remove('active'));
@@ -427,6 +403,7 @@
             this.gui.addEventListener('click', (e) => {
                 const menuItem = e.target.closest('.anonimbiri-menu-item');
                 if (!menuItem) return;
+                if(window.SOUND) window.SOUND.play('select_0', 0.1);
                 const setting = menuItem.dataset.setting;
                 if (!setting) return;
                 if (menuItem.querySelector('.anonimbiri-toggle-switch')) {
@@ -439,7 +416,12 @@
                     this.showHotkeyModal(setting);
                 }
             });
-             this.gui.querySelectorAll('.anonimbiri-color-picker-input').forEach(cp => cp.addEventListener('input', (e) => {
+            this.gui.querySelectorAll('.anonimbiri-menu-item, .anonimbiri-tab, .anonimbiri-close-btn').forEach(el => {
+                el.addEventListener('mouseenter', () => {
+                    if (window.SOUND) window.SOUND.play('hover_0', 0.1);
+                });
+            });
+            this.gui.querySelectorAll('.anonimbiri-color-picker-input').forEach(cp => cp.addEventListener('input', (e) => {
                 this.settings[e.target.dataset.setting] = e.target.value;
                 this.saveSettings('anonimbiri_settings', this.settings);
                 this.updateGUIPicker(e.target.dataset.setting);
@@ -482,6 +464,13 @@
             this.settings.menuVisible = !this.settings.menuVisible;
             this.gui.classList.toggle('visible', this.settings.menuVisible);
             this.saveSettings('anonimbiri_settings', this.settings);
+            if (this.settings.menuVisible) {
+                if (window.SOUND) window.SOUND.play('tick_0', 0.1);
+                let lock = document.pointerLockElement || document.mozPointerLockElement;
+                if (lock) {
+                    document.exitPointerLock();
+                }
+            }
         }
 
         showHotkeyModal(settingName) {
@@ -533,24 +522,33 @@
         }
 
         isPlayerVisible(player) {
-            // CORRECTED LOGIC: If Wall Check is OFF, bypass visibility check (return true).
-            // If Wall Check is ON, perform the raycast.
-            if (!this.settings.aimbotWallCheck) {
-                return true;
-            }
-
+            if (!this.settings.aimbotWallCheck) return true;
             if (!player.bodyParts?.head) return false;
+
             const targetPos = new this.THREE.Vector3();
             this.getPartCenter(player.bodyParts.head, targetPos);
             if (!this.myPlayer.children[0]?.children[0]) return false;
             this.myPlayer.children[0].children[0].getWorldPosition(this.cameraPos);
             const direction = targetPos.clone().sub(this.cameraPos).normalize();
             this.raycaster.set(this.cameraPos, direction);
-            const objectsToIntersect = this.scene.children.filter(obj => obj.type === 'Mesh' && obj.visible);
+
+            const objectsToIntersect = this.scene.children.filter(obj => obj.type === 'Mesh' && obj.visible && obj.id !== player.id);
             const intersects = this.raycaster.intersectObjects(objectsToIntersect, false);
+
             if (intersects.length > 0) {
                 const distanceToPlayer = this.cameraPos.distanceTo(targetPos);
                 if (intersects[0].distance < distanceToPlayer - 1) {
+                    // YENİ DUVAR BOYUT KONTROLÜ
+                    const hitObject = intersects[0].object;
+                    if (hitObject.geometry) {
+                        if (!hitObject.geometry.boundingBox) hitObject.geometry.computeBoundingBox();
+                        const size = hitObject.geometry.boundingBox.getSize(new this.THREE.Vector3());
+                        // Eğer nesne bir oyuncudan belirgin şekilde büyükse, duvar olarak kabul et
+                        if (size.y > 15 && (size.x > 15 || size.z > 15)) {
+                            return false; // Bu bir duvar, oyuncu görünmez.
+                        }
+                    }
+                    // Eğer boyut kontrolü geçilirse (küçük nesne), yine de mesafeyi kontrol et.
                     return false;
                 }
             }
@@ -588,7 +586,6 @@
             targetVector.applyMatrix4(part.matrixWorld);
         }
 
-        // RESTORED: Original skeleton creation logic
         createPlayerESP(player) {
             const esp = { skeleton: null, box: null };
             const boneGeo = new this.THREE.BufferGeometry();
@@ -613,7 +610,6 @@
             }
         }
 
-        // RESTORED: Original skeleton update logic
         updatePlayerESP(player) {
             if (!this.managedESP.has(player.id) || !player.bodyParts) return;
             const { esp } = this.managedESP.get(player.id);
@@ -661,16 +657,21 @@
         }
 
         bhopSequence() {
-            if (!this.myPlayer || !this.settings.bhopEnabled || !this.spacebarDown || !this.gameInputs) {
-                this.bhopIsCrouching = false; clearTimeout(this.bhopLoopTimeout); return;
+            if (!this.myPlayer || !this.settings.bhopEnabled || !this.spacebarDown) {
+                this.bhopIsCrouching = false;
+                clearTimeout(this.bhopLoopTimeout);
+                return;
             }
             clearTimeout(this.bhopLoopTimeout);
+
             if (this.myPlayer.onGround) {
-                this.triggerGameInput('Space', true);
-                setTimeout(() => { this.triggerGameInput('Space', false); this.bhopIsCrouching = true; this.bhopLoopTimeout = setTimeout(() => this.bhopSequence(), 30); }, 10);
+                this.simulateKey(32); // Jump
+                this.bhopIsCrouching = true;
+                this.bhopLoopTimeout = setTimeout(() => this.bhopSequence(), 30);
             } else if (this.bhopIsCrouching) {
-                this.triggerGameInput('ShiftLeft', true);
-                setTimeout(() => { this.triggerGameInput('ShiftLeft', false); this.bhopIsCrouching = false; this.bhopLoopTimeout = setTimeout(() => this.bhopSequence(), 30); }, 10);
+                this.simulateKey(16); // Slide
+                this.bhopIsCrouching = false;
+                this.bhopLoopTimeout = setTimeout(() => this.bhopSequence(), 30);
             } else {
                 this.bhopLoopTimeout = setTimeout(() => this.bhopSequence(), 10);
             }
@@ -678,28 +679,29 @@
 
         handleAutoFire(targetPlayer) {
             clearInterval(this.autoFireTimer);
-            const shouldFire = this.settings.autoFireEnabled && (!this.settings.aimbotEnabled || (this.settings.aimbotEnabled && targetPlayer)) && this.gameInputs;
+            const shouldFire = this.settings.autoFireEnabled && (!this.settings.aimbotEnabled || (this.settings.aimbotEnabled && targetPlayer));
             if (shouldFire) {
                 this.autoFireTimer = setInterval(() => {
-                    this.triggerGameInput('MouseLeft', true); setTimeout(() => this.triggerGameInput('MouseLeft', false), 20);
+                    this.simulateMouse('mousedown', 0);
+                    setTimeout(() => this.simulateMouse('mouseup', 0), 20);
                 }, 100);
             }
         }
 
         stopAutoFire() {
             clearInterval(this.autoFireTimer);
-            if (this.gameInputs) this.triggerGameInput('MouseLeft', false);
+            this.simulateMouse('mouseup', 0);
         }
 
         animate() {
             requestAnimationFrame(() => this.animate());
             this.materials.forEach(m => { if (m?.uniforms.u_time) m.uniforms.u_time.value += 0.016; });
-            if (!this.gameInputs) this.findGameInputs();
+
             if (this.scene && this.myPlayer && !this.scene.children.includes(this.myPlayer)) {
                 console.log("🌸 Anime Cheats: Scene reset detected! Re-initializing...");
                 for (const playerId of this.managedESP.keys()) this.removePlayerESP(playerId);
                 this.scene = null; this.myPlayer = null; this.players = []; this.stopAutoFire();
-                clearTimeout(this.bhopLoopTimeout); this.triggerGameInput('Space', false); this.triggerGameInput('ShiftLeft', false);
+                clearTimeout(this.bhopLoopTimeout);
                 return;
             }
             if (!this.scene) { this.attemptInjection(); return; }
@@ -713,7 +715,15 @@
                             if (!child.bodyParts) child.bodyParts = this.findBodyParts(child);
                             if (child.bodyParts.head && child.bodyParts.body && child.bodyParts.legs.length >= 2) players.push(child);
                         }
-                    } else if (child.material) child.material.wireframe = this.settings.wireframeEnabled;
+                    } else if (child.material) {
+                        if (Array.isArray(child.material)) {
+                            for (const material of child.material) {
+                                material.wireframe = this.settings.wireframeEnabled;
+                            }
+                        } else {
+                            child.material.wireframe = this.settings.wireframeEnabled;
+                        }
+                    }
                 }
             } catch (err) { console.error("🌸 Anime Cheats: Error processing scene children:", err); }
             this.myPlayer = myPlayer; this.players = players;
