@@ -30,7 +30,7 @@
 
 ### 🖼️ In-Game Screenshot
 
-![AimbaeShiro In-game](https://i.imgur.com/JExAQYt.png)
+![AimbaeShiro In-game](/Assets/screenshot.png)
 
 ---
 
