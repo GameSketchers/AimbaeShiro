@@ -133,6 +133,7 @@
                             obj.weapon.recoil = 0;
                             obj.weapon.recoilR = 0;
                             obj.weapon.recoilZ = 0;
+                            obj.refillKnife();
                             obj.unlimitedSprays = true;
                         }
                         if (this.myTeamId !== null) {
