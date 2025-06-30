@@ -125,24 +125,15 @@
                         const player = obj.objInstances;
                         if (obj.isYou) {
                             this.myTeamId = obj._team;
-                            //some work, some don't.
-                            //These can be fixed in the future.
-                            obj.noRecoil = false;
-                            obj.spread = 0;
-                            obj.cantShootTimer = 0;
-                            obj.fRate = 0;
-                            obj.unlimitedSprays = true;
-                            obj.dmgMlt = Infinity;
-                            obj.headMlt = Infinity;
-                            obj.rangeMlt = Infinity;
-                            obj.reloadTimer = 0;
+                         // These can be fixed in the future.
                             obj.ammos[0] = Infinity;
-                            obj.ammos[1] = Infinity;
-                            obj.ammos[2] = Infinity;
-                            obj.throwCharge = 0;
-                            obj.lastThrowTime = 0;
-                            obj.refillKnife();
-                            obj.resetAmmo();
+                         /* obj.ammos[1] = Infinity;
+                            obj.ammos[2] = Infinity; */
+                            obj.weapon.rate = 50;
+                            obj.weapon.recoil = 0;
+                            obj.weapon.recoilR = 0;
+                            obj.weapon.recoilZ = 0;
+                            obj.unlimitedSprays = true;
                         }
                         if (this.myTeamId !== null) {
                             player.isTeam = (obj._team === this.myTeamId);
@@ -403,7 +394,7 @@
                 // If the first object hit by the ray is closer than the player, the player is obscured.
                 if (intersects[0].distance < distanceToPlayer - 1) {
                     const hitObject = intersects[0].object;
-                     // A simple check to ignore small, irrelevant objects that might block the ray.
+                    // A simple check to ignore small, irrelevant objects that might block the ray.
                     if (hitObject.geometry) {
                         if (!hitObject.geometry.boundingBox) hitObject.geometry.computeBoundingBox();
                         const size = hitObject.geometry.boundingBox.getSize(new this.THREE.Vector3());
@@ -638,14 +629,14 @@
             try {
                 for (const child of this.scene.children) {
                     if (!child) continue;
-                     if (child.type === 'Object3D' && child.children[0]?.children[0]?.type === 'PerspectiveCamera') {
+                    if (child.type === 'Object3D' && child.children[0]?.children[0]?.type === 'PerspectiveCamera') {
                         myPlayer = child;
                         this.camera = child.children[0].children[0];
                     } else if (child.type === 'Object3D' && child.position.x !== 0 && child.position.z !== 0) {
-                         if (!child.bodyParts) child.bodyParts = this.findBodyParts(child);
-                         if (child.bodyParts.head && child.bodyParts.body && child.bodyParts.legs.length >= 2) {
+                        if (!child.bodyParts) child.bodyParts = this.findBodyParts(child);
+                        if (child.bodyParts.head && child.bodyParts.body && child.bodyParts.legs.length >= 2) {
                             players.push(child);
-                         }
+                        }
                     } else if (child.material) {
                         if (Array.isArray(child.material)) { for (const material of child.material) material.wireframe = this.settings.wireframeEnabled; }
                         else child.material.wireframe = this.settings.wireframeEnabled;
