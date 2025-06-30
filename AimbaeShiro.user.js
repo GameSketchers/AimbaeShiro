@@ -9,7 +9,7 @@
 // @description:tr  Aimbot, Billboard & Mesafeye Göre Ölçeklenen ESP, Takım Kontrolü ve Bhop içeren anime temalı güçlü bir hile aracı. Güncellenmiş ayar mantığı ve duvar arkası nişan alma özelliği ile.
 // @description:ja  エイムボット、ビルボード＆距離スケールESP、チームチェック、バニーホップを備えたアニメ風の高機能チートツール。更新された設定ロジックとウォールバン機能付き。
 // @description:az  Aimbot, Billboard & Məsafəyə Görə Miqyaslanan ESP, Komanda Yoxlaması və Bhop ilə anime tərzli güclü bir hile vasitəsidir. Yenilənmiş tənzimləmə məntiqi və divar arxası nişan alma xüsusiyyəti ilə.
-// @author       anonimbiri (Updated by request)
+// @author       anonimbiri
 // @match        *://krunker.io/*
 // @match        *://browserfps.com/*
 // @exclude      *://krunker.io/social*
