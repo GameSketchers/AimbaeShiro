@@ -126,6 +126,16 @@
                         if (obj.isYou) {
                             this.myTeamId = obj._team;
                             obj.resetAmmo(); // It is currently working, but may be fixed in the future.
+                            obj.recoilAnim = 0;
+                            obj.recoilAnimY = 0;
+                            obj.recoilForce = 0;
+                            obj.recoilTween = null;
+                            obj.recoilTweenR = 0;
+                            obj.recoilTweenY = 0;
+                            obj.recoilTweenYM = 0;
+                            obj.recoilTweenZ = 0;
+                            obj.recoilX = 0;
+                            obj.recoilZ = 0;
                         }
                         if (this.myTeamId !== null) {
                             player.isTeam = (obj._team === this.myTeamId);
