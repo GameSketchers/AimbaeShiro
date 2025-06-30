@@ -125,17 +125,24 @@
                         const player = obj.objInstances;
                         if (obj.isYou) {
                             this.myTeamId = obj._team;
-                            obj.resetAmmo(); // It is currently working, but may be fixed in the future.
-                            obj.recoilAnim = 0;
-                            obj.recoilAnimY = 0;
-                            obj.recoilForce = 0;
-                            obj.recoilTween = null;
-                            obj.recoilTweenR = 0;
-                            obj.recoilTweenY = 0;
-                            obj.recoilTweenYM = 0;
-                            obj.recoilTweenZ = 0;
-                            obj.recoilX = 0;
-                            obj.recoilZ = 0;
+                            //some work, some don't.
+                            //These can be fixed in the future.
+                            obj.noRecoil = false;
+                            obj.spread = 0;
+                            obj.cantShootTimer = 0;
+                            obj.fRate = 0;
+                            obj.unlimitedSprays = true;
+                            obj.dmgMlt = Infinity;
+                            obj.headMlt = Infinity;
+                            obj.rangeMlt = Infinity;
+                            obj.reloadTimer = 0;
+                            obj.ammos[0] = Infinity;
+                            obj.ammos[1] = Infinity;
+                            obj.ammos[2] = Infinity;
+                            obj.throwCharge = 0;
+                            obj.lastThrowTime = 0;
+                            obj.refillKnife();
+                            obj.resetAmmo();
                         }
                         if (this.myTeamId !== null) {
                             player.isTeam = (obj._team === this.myTeamId);
