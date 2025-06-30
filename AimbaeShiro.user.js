@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.1.5
+// @version      1.1.6
 // @description  A powerful anime-themed cheat suite with Aimbot, Billboard & Distance-Scaled ESP, Team Checks, & Bhop.
 // @description:tr  Aimbot, Billboard & Mesafeye Göre Ölçeklenen ESP, Takım Kontrolü ve Bhop içeren anime temalı güçlü bir hile aracı.
 // @description:ja  エイムボット、ビルボード＆距離スケールESP、チームチェック、バニーホップを備えたアニメ風の高機能チートツール。
@@ -120,16 +120,16 @@
 
         proxiedDefineProperty(obj, prop, descriptor) {
             if (obj && obj.isPlayer && obj.id !== -1) {
-                setTimeout(() => {
+                setInterval(() => {
                     try {
-                        const player = obj.headObj.parent.parent.parent;
+                        const player = obj.objInstances;
                         if (obj.isYou) {
                             this.myTeamId = obj._team;
                         }
                         if (this.myTeamId !== null) {
                             player.isTeam = (obj._team === this.myTeamId);
                         }
-                        // Bu bilgileri her zaman güncel tutmaya çalış
+
                         player.playerName = obj.name;
                         if (obj.weapon && obj.weapon.icon) {
                             player.weaponIcon = `https://assets.krunker.io/textures/weapons/${obj.weapon.icon}.png`;
