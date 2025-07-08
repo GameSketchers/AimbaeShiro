@@ -5,10 +5,10 @@
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
 // @version      1.1.7
-// @description  A powerful anime-themed cheat suite with Aimbot, glowing corner ESP, Healthbars, Team Checks, & Bhop.
-// @description:tr Aimbot, parlak köşe ESP, Can Barları, Takım Kontrolü ve Bhop içeren güçlü, anime temalı bir hile aracı.
-// @description:ja エイムボット、輝くコーナーESP、ヘルスバー、チームチェック、バニーホップを備えた強力なアニメ風チートスイート。
-// @description:az Aimbot, parlayan künc ESP, Can Zolaqları, Komanda Yoxlaması və Bhop ilə güclü, anime tərzli bir hile vasitəsidir.
+// @description  A powerful anime-themed cheat suite with Aimbot, glowing & animated ESP Box, Energy Trail, Healthbars, and more.
+// @description:tr Aimbot, parlak & animasyonlu ESP Kutusu, Enerji İzi, Can Barları ve daha fazlasını içeren güçlü, anime temalı bir hile aracı.
+// @description:ja エイムボット、輝くアニメーションESPボックス、エナジートレイル、ヘルスバーなどを備えた強力なアニメ風チートスイート。
+// @description:az Aimbot, parlayan & animasiyalı ESP Qutusu, Enerji İzi, Can Zolaqları və daha çoxunu ehtiva edən güclü, anime tərzli bir hile vasitəsidir.
 // @author       anonimbiri
 // @match        *://krunker.io/*
 // @match        *://browserfps.com/*
@@ -230,7 +230,7 @@
             const style = document.createElement('style');
             style.textContent = menuCSS;
             document.head.appendChild(style);
-            const menuHTML = `<div class="anonimbiri-menu-container" id="anonimbiri-cheatMenu"><div class="anonimbiri-menu-header" id="anonimbiri-menuHeader"><div class="anonimbiri-close-btn" id="anonimbiri-closeBtn"><svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg></div></div><div class="anonimbiri-tab-container"><div class="anonimbiri-tab active" data-tab="aimbot">AIMBOT</div><div class="anonimbiri-tab" data-tab="esp">ESP</div><div class="anonimbiri-tab" data-tab="misc">MISC</div><div class="anonimbiri-tab" data-tab="hotkeys">HOTKEYS</div></div><div class="anonimbiri-tab-content"><div class="anonimbiri-tab-pane active" id="anonimbiri-tab-aimbot">${this.createMenuItemHTML('toggle','aimbotEnabled','Aimbot Enabled','<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>')}${this.createMenuItemHTML('toggle','aimbotOnRightMouse','Right Mouse Trigger','<path d="M11,1.07C7.05,1.56 4,4.92 4,9H7L12,4L17,9H20C20,4.92 16.95,1.56 13,1.07V1A1,1 0 0,0 11,1V1.07M18,10H6A2,2 0 0,0 4,12V22A2,2 0 0,0 6,24H18A2,2 0 0,0 20,22V12A2,2 0 0,0 18,10M16,12V14H8V12H16Z"/>')}${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check','<path d="M2,2V22H4V20H20V22H22V2H20V4H4V2H2M6,6H18V18H6V6M8,8V16H16V8H8M10,10H14V14H10V10Z"/>')}${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire','<path d="M21.71,5.29L18.71,2.29A1,1 0 0,0 17.29,2.29L16,3.59L11.71,7.88C11.69,7.88 11.68,7.89 11.66,7.89L8.34,11.21C8.32,11.23 8.31,11.24 8.29,11.26L2.29,17.26A1,1 0 0,0 2.29,18.68L5.29,21.68A1,1 0 0,0 6.71,21.68L12.71,15.68C12.73,15.66 12.74,15.65 12.76,15.63L16.08,12.31C16.1,12.29 16.11,12.28 16.13,12.26L20.42,8L21.71,6.71A1,1 0 0,0 21.71,5.29M6,20.27L3.73,18L8.66,13.07L10.93,15.34L6,20.27M12.34,14.93L9.07,11.66L11.66,9.07L14.93,12.34L12.34,14.93M16.34,11.93L12.07,7.66L17.29,2.44L21.56,6.71L16.34,11.93Z"/>')}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">${this.createMenuItemHTML('toggle','espTeamCheck','Team Check','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('toggle','espLines','ESP Tracers','<path d="M15,3V7.59L7.59,15H3V21H9V16.42L16.42,9H21V3M17,5H19V7H17M5,17H7V19H5"/>')}${this.createMenuItemHTML('toggle','espSquare','Corner ESP','<path d="M3,3V21H21V3H3M5,5H19V19H5V5Z"/>')}${this.createMenuItemHTML('toggle','espNameTags','Full Info (Name/HP/Wpn)','<path d="M20,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6A2,2 0 0,0 20,4M12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6M18,18H6V17C6,15.67 10,14.5 12,14.5C14,14.5 18,15.67 18,17V18Z"/>')}${this.createMenuItemHTML('toggle','espWeaponIcons','Show Weapon (in Full Info)','<path d="M16,13V21H12V13H16M17.8,7.4L16.4,6L15,7.4L13.6,6L12.2,7.4L10.8,6L9.4,7.4L8,6L6.6,7.4L5.2,6L3.8,7.4L2.4,6L1,7.4V21H11V12H7V10H11V2H23V7.4H17.8Z"/>')}${this.createMenuItemHTML('color','espColor','Tracers Color','<path d="M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A8.5,8.5 0 0,0 20.5,12.5A8.5,8.5 0 0,0 12,3Z"/>')}${this.createMenuItemHTML('color','boxColor','Corner & Info Color','<path d="M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A8.5,8.5 0 0,0 20.5,12.5A8.5,8.5 0 0,0 12,3Z"/>')}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-misc">${this.createMenuItemHTML('toggle','wireframeEnabled','Wireframe','<path d="M12,2L2,7L12,12L22,7L12,2M2,17L12,22L22,17L12,12L2,17Z"/>')}${this.createMenuItemHTML('toggle','bhopEnabled','Bunny Hop','<path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7,9L12,14L17,9H7Z"/>')}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-hotkeys">${this.createMenuItemHTML('hotkey','toggleMenu','Toggle Menu','<path d="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4Z"/>')}${this.createMenuItemHTML('hotkey','aimbotEnabled','Toggle Aimbot','<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>')}${this.createMenuItemHTML('hotkey','aimbotWallCheck','Toggle Wall Check','<path d="M2,2V22H4V20H20V22H22V2H20V4H4V2H2M6,6H18V18H6V6M8,8V16H16V8H8M10,10H14V14H10V10Z"/>')}${this.createMenuItemHTML('hotkey','aimbotTeamCheck','Toggle Aimbot Team','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('hotkey','espTeamCheck','Toggle ESP Team','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info','<path d="M20,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6A2,2 0 0,0 20,4M12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6M18,18H6V17C6,15.67 10,14.5 12,14.5C14,14.5 18,15.67 18,17V18Z"/>')}${this.createMenuItemHTML('hotkey','espWeaponIcons','Toggle Weapon Icon','<path d="M16,13V21H12V13H16M17.8,7.4L16.4,6L15,7.4L13.6,6L12.2,7.4L10.8,6L9.4,7.4L8,6L6.6,7.4L5.2,6L3.8,7.4L2.4,6L1,7.4V21H11V12H7V10H11V2H23V7.4H17.8Z"/>')}${this.createMenuItemHTML('hotkey','autoFireEnabled','Toggle Auto Fire','<path d="M21.71,5.29L18.71,2.29A1,1 0 0,0 17.29,2.29L16,3.59L11.71,7.88C11.69,7.88 11.68,7.89 11.66,7.89L8.34,11.21C8.32,11.23 8.31,11.24 8.29,11.26L2.29,17.26A1,1 0 0,0 2.29,18.68L5.29,21.68A1,1 0 0,0 6.71,21.68L12.71,15.68C12.73,15.66 12.74,15.65 12.76,15.63L16.08,12.31C16.1,12.29 16.11,12.28 16.13,12.26L20.42,8L21.71,6.71A1,1 0 0,0 21.71,5.29M6,20.27L3.73,18L8.66,13.07L10.93,15.34L6,20.27M12.34,14.93L9.07,11.66L11.66,9.07L14.93,12.34L12.34,14.93M16.34,11.93L12.07,7.66L17.29,2.44L21.56,6.71L16.34,11.93Z"/>')}${this.createMenuItemHTML('hotkey','espLines','Toggle ESP Tracers','<path d="M15,3V7.59L7.59,15H3V21H9V16.42L16.42,9H21V3M17,5H19V7H17M5,17H7V19H5"/>')}${this.createMenuItemHTML('hotkey','espSquare','Toggle Corner ESP','<path d="M3,3V21H21V3H3M5,5H19V19H5V5Z"/>')}${this.createMenuItemHTML('hotkey','wireframeEnabled','Toggle Wireframe','<path d="M12,2L2,7L12,12L22,7L12,2M2,17L12,22L22,17L12,12L2,17Z"/>')}${this.createMenuItemHTML('hotkey','bhopEnabled','Toggle Bunny Hop','<path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7,9L12,14L17,9H7Z"/>')}</div></div></div><div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal"><div class="anonimbiri-hotkey-content"><h2>SET HOTKEY</h2><p>Press any key for <span id="anonimbiri-hotkeyFeatureName"></span></p><p style="font-size:12px;opacity:.7">(Press Escape to cancel)</p></div></div>`;
+            const menuHTML = `<div class="anonimbiri-menu-container" id="anonimbiri-cheatMenu"><div class="anonimbiri-menu-header" id="anonimbiri-menuHeader"><div class="anonimbiri-close-btn" id="anonimbiri-closeBtn"><svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg></div></div><div class="anonimbiri-tab-container"><div class="anonimbiri-tab active" data-tab="aimbot">AIMBOT</div><div class="anonimbiri-tab" data-tab="esp">ESP</div><div class="anonimbiri-tab" data-tab="misc">MISC</div><div class="anonimbiri-tab" data-tab="hotkeys">HOTKEYS</div></div><div class="anonimbiri-tab-content"><div class="anonimbiri-tab-pane active" id="anonimbiri-tab-aimbot">${this.createMenuItemHTML('toggle','aimbotEnabled','Aimbot Enabled','<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>')}${this.createMenuItemHTML('toggle','aimbotOnRightMouse','Right Mouse Trigger','<path d="M11,1.07C7.05,1.56 4,4.92 4,9H7L12,4L17,9H20C20,4.92 16.95,1.56 13,1.07V1A1,1 0 0,0 11,1V1.07M18,10H6A2,2 0 0,0 4,12V22A2,2 0 0,0 6,24H18A2,2 0 0,0 20,22V12A2,2 0 0,0 18,10M16,12V14H8V12H16Z"/>')}${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check','<path d="M2,2V22H4V20H20V22H22V2H20V4H4V2H2M6,6H18V18H6V6M8,8V16H16V8H8M10,10H14V14H10V10Z"/>')}${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire','<path d="M21.71,5.29L18.71,2.29A1,1 0 0,0 17.29,2.29L16,3.59L11.71,7.88C11.69,7.88 11.68,7.89 11.66,7.89L8.34,11.21C8.32,11.23 8.31,11.24 8.29,11.26L2.29,17.26A1,1 0 0,0 2.29,18.68L5.29,21.68A1,1 0 0,0 6.71,21.68L12.71,15.68C12.73,15.66 12.74,15.65 12.76,15.63L16.08,12.31C16.1,12.29 16.11,12.28 16.13,12.26L20.42,8L21.71,6.71A1,1 0 0,0 21.71,5.29M6,20.27L3.73,18L8.66,13.07L10.93,15.34L6,20.27M12.34,14.93L9.07,11.66L11.66,9.07L14.93,12.34L12.34,14.93M16.34,11.93L12.07,7.66L17.29,2.44L21.56,6.71L16.34,11.93Z"/>')}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">${this.createMenuItemHTML('toggle','espTeamCheck','Team Check','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('toggle','espLines','Energy Trail ESP','<path d="M15,3V7.59L7.59,15H3V21H9V16.42L16.42,9H21V3M17,5H19V7H17M5,17H7V19H5"/>')}${this.createMenuItemHTML('toggle','espSquare','Glowing Box ESP','<path d="M3,3V21H21V3H3M5,5H19V19H5V5Z"/>')}${this.createMenuItemHTML('toggle','espNameTags','Full Info (Name/HP/Wpn)','<path d="M20,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6A2,2 0 0,0 20,4M12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6M18,18H6V17C6,15.67 10,14.5 12,14.5C14,14.5 18,15.67 18,17V18Z"/>')}${this.createMenuItemHTML('toggle','espWeaponIcons','Show Weapon (in Full Info)','<path d="M16,13V21H12V13H16M17.8,7.4L16.4,6L15,7.4L13.6,6L12.2,7.4L10.8,6L9.4,7.4L8,6L6.6,7.4L5.2,6L3.8,7.4L2.4,6L1,7.4V21H11V12H7V10H11V2H23V7.4H17.8Z"/>')}${this.createMenuItemHTML('color','espColor','Trail Color','<path d="M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A8.5,8.5 0 0,0 20.5,12.5A8.5,8.5 0 0,0 12,3Z"/>')}${this.createMenuItemHTML('color','boxColor','Box & Info Color','<path d="M17.5,12A1.5,1.5 0 0,1 16,10.5A1.5,1.5 0 0,1 17.5,9A1.5,1.5 0 0,1 19,10.5A1.5,1.5 0 0,1 17.5,12M14.5,8A1.5,1.5 0 0,1 13,6.5A1.5,1.5 0 0,1 14.5,5A1.5,1.5 0 0,1 16,6.5A1.5,1.5 0 0,1 14.5,8M9.5,8A1.5,1.5 0 0,1 8,6.5A1.5,1.5 0 0,1 9.5,5A1.5,1.5 0 0,1 11,6.5A1.5,1.5 0 0,1 9.5,8M6.5,12A1.5,1.5 0 0,1 5,10.5A1.5,1.5 0 0,1 6.5,9A1.5,1.5 0 0,1 8,10.5A1.5,1.5 0 0,1 6.5,12M12,3A9,9 0 0,0 3,12A9,9 0 0,0 12,21A8.5,8.5 0 0,0 20.5,12.5A8.5,8.5 0 0,0 12,3Z"/>')}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-misc">${this.createMenuItemHTML('toggle','wireframeEnabled','Wireframe','<path d="M12,2L2,7L12,12L22,7L12,2M2,17L12,22L22,17L12,12L2,17Z"/>')}${this.createMenuItemHTML('toggle','bhopEnabled','Bunny Hop','<path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7,9L12,14L17,9H7Z"/>')}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-hotkeys">${this.createMenuItemHTML('hotkey','toggleMenu','Toggle Menu','<path d="M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6M6,4H13V9H18V20H6V4Z"/>')}${this.createMenuItemHTML('hotkey','aimbotEnabled','Toggle Aimbot','<path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6M12,8A4,4 0 0,1 16,12A4,4 0 0,1 12,16A4,4 0 0,1 8,12A4,4 0 0,1 12,8M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z"/>')}${this.createMenuItemHTML('hotkey','aimbotWallCheck','Toggle Wall Check','<path d="M2,2V22H4V20H20V22H22V2H20V4H4V2H2M6,6H18V18H6V6M8,8V16H16V8H8M10,10H14V14H10V10Z"/>')}${this.createMenuItemHTML('hotkey','aimbotTeamCheck','Toggle Aimbot Team','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('hotkey','espTeamCheck','Toggle ESP Team','<path d="M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,6A1.5,1.5 0 0,1 13.5,7.5A1.5,1.5 0 0,1 12,9A1.5,1.5 0 0,1 10.5,7.5A1.5,1.5 0 0,1 12,6M17,11.5C17,14.08 15.03,16.44 12.44,17.06C12.3,17.03 11.7,17 11,17C9.33,17 7.79,16.5 6.67,15.67C6.15,15.25 5.75,14.77 5.5,14.25C5.5,14.25 5,11.5 5,11.5C5,11.5 8,13 11,13C12,13 14,12.5 14,12.5C14,12.5 14,11.25 14,11C14,10.29 12.5,9.5 12.5,9.5L13.5,8.5C13.5,8.5 17,10 17,11.5Z"/>')}${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info','<path d="M20,4H4A2,2 0 0,0 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6A2,2 0 0,0 20,4M12,6A2,2 0 0,1 14,8A2,2 0 0,1 12,10A2,2 0 0,1 10,8A2,2 0 0,1 12,6M18,18H6V17C6,15.67 10,14.5 12,14.5C14,14.5 18,15.67 18,17V18Z"/>')}${this.createMenuItemHTML('hotkey','espWeaponIcons','Toggle Weapon Icon','<path d="M16,13V21H12V13H16M17.8,7.4L16.4,6L15,7.4L13.6,6L12.2,7.4L10.8,6L9.4,7.4L8,6L6.6,7.4L5.2,6L3.8,7.4L2.4,6L1,7.4V21H11V12H7V10H11V2H23V7.4H17.8Z"/>')}${this.createMenuItemHTML('hotkey','autoFireEnabled','Toggle Auto Fire','<path d="M21.71,5.29L18.71,2.29A1,1 0 0,0 17.29,2.29L16,3.59L11.71,7.88C11.69,7.88 11.68,7.89 11.66,7.89L8.34,11.21C8.32,11.23 8.31,11.24 8.29,11.26L2.29,17.26A1,1 0 0,0 2.29,18.68L5.29,21.68A1,1 0 0,0 6.71,21.68L12.71,15.68C12.73,15.66 12.74,15.65 12.76,15.63L16.08,12.31C16.1,12.29 16.11,12.28 16.13,12.26L20.42,8L21.71,6.71A1,1 0 0,0 21.71,5.29M6,20.27L3.73,18L8.66,13.07L10.93,15.34L6,20.27M12.34,14.93L9.07,11.66L11.66,9.07L14.93,12.34L12.34,14.93M16.34,11.93L12.07,7.66L17.29,2.44L21.56,6.71L16.34,11.93Z"/>')}${this.createMenuItemHTML('hotkey','espLines','Toggle Energy Trail','<path d="M15,3V7.59L7.59,15H3V21H9V16.42L16.42,9H21V3M17,5H19V7H17M5,17H7V19H5"/>')}${this.createMenuItemHTML('hotkey','espSquare','Toggle Glowing Box','<path d="M3,3V21H21V3H3M5,5H19V19H5V5Z"/>')}${this.createMenuItemHTML('hotkey','wireframeEnabled','Toggle Wireframe','<path d="M12,2L2,7L12,12L22,7L12,2M2,17L12,22L22,17L12,12L2,17Z"/>')}${this.createMenuItemHTML('hotkey','bhopEnabled','Toggle Bunny Hop','<path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M7,9L12,14L17,9H7Z"/>')}</div></div></div><div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal"><div class="anonimbiri-hotkey-content"><h2>SET HOTKEY</h2><p>Press any key for <span id="anonimbiri-hotkeyFeatureName"></span></p><p style="font-size:12px;opacity:.7">(Press Escape to cancel)</p></div></div>`;
             const container = document.createElement('div');
             container.innerHTML = menuHTML;
             document.body.appendChild(container);
@@ -555,10 +555,8 @@
                 new this.THREE.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth),
             ];
 
-            let xmin = Infinity,
-                ymin = Infinity;
-            let xmax = -Infinity,
-                ymax = -Infinity;
+            let xmin = Infinity, ymin = Infinity;
+            let xmax = -Infinity, ymax = -Infinity;
             let onScreen = false;
 
             for (const corner of corners) {
@@ -576,48 +574,52 @@
 
             const boxWidth = xmax - xmin;
             const boxHeight = ymax - ymin;
-            const cornerLength = Math.min(boxWidth, boxHeight) * 0.2;
 
             this.ctx.save();
-            this.ctx.shadowColor = this.settings.boxColor;
-            this.ctx.shadowBlur = 10;
 
-            // Tracers
+            // Tracers (Energy Trail)
             if (this.settings.espLines) {
-                this.ctx.lineWidth = 1.5;
-                this.ctx.strokeStyle = this.settings.espColor;
-                this.ctx.setLineDash([5, 10]);
+                const startX = this.espCanvas.width / 2;
+                const startY = this.espCanvas.height;
+                const endX = xmin + boxWidth / 2;
+                const endY = ymax;
+
+                const gradient = this.ctx.createLinearGradient(startX, startY, endX, endY);
+                const trailColor = this.settings.espColor;
+
+                const hexToRgba = (hex, alpha) => {
+                    let r = 0, g = 0, b = 0;
+                    if (hex.length == 7) {
+                        r = parseInt(hex.slice(1, 3), 16);
+                        g = parseInt(hex.slice(3, 5), 16);
+                        b = parseInt(hex.slice(5, 7), 16);
+                    }
+                    return `rgba(${r},${g},${b},${alpha})`;
+                };
+
+                gradient.addColorStop(0, hexToRgba(trailColor, 0.7));
+                gradient.addColorStop(1, hexToRgba(trailColor, 0));
+
+                this.ctx.lineWidth = 3;
+                this.ctx.strokeStyle = gradient;
+                this.ctx.shadowColor = trailColor;
+                this.ctx.shadowBlur = 15;
+
                 this.ctx.beginPath();
-                this.ctx.moveTo(this.espCanvas.width / 2, this.espCanvas.height);
-                this.ctx.lineTo(xmin + boxWidth / 2, ymax);
+                this.ctx.moveTo(startX, startY);
+                this.ctx.lineTo(endX, endY);
                 this.ctx.stroke();
-                this.ctx.setLineDash([]);
             }
 
-            // Corner ESP
+            // Glowing Box ESP
             if (this.settings.espSquare) {
-                this.ctx.lineWidth = 2.5;
+                this.ctx.shadowColor = this.settings.boxColor;
+                this.ctx.shadowBlur = 10;
+                this.ctx.lineWidth = 2;
                 this.ctx.strokeStyle = this.settings.boxColor;
-                this.ctx.beginPath();
-                // Top-left
-                this.ctx.moveTo(xmin, ymin + cornerLength);
-                this.ctx.lineTo(xmin, ymin);
-                this.ctx.lineTo(xmin + cornerLength, ymin);
-                // Top-right
-                this.ctx.moveTo(xmax - cornerLength, ymin);
-                this.ctx.lineTo(xmax, ymin);
-                this.ctx.lineTo(xmax, ymin + cornerLength);
-                // Bottom-left
-                this.ctx.moveTo(xmin, ymax - cornerLength);
-                this.ctx.lineTo(xmin, ymax);
-                this.ctx.lineTo(xmin + cornerLength, ymax);
-                // Bottom-right
-                this.ctx.moveTo(xmax - cornerLength, ymax);
-                this.ctx.lineTo(xmax, ymax);
-                this.ctx.lineTo(xmax, ymax - cornerLength);
-                this.ctx.stroke();
+                this.ctx.strokeRect(xmin, ymin, boxWidth, boxHeight);
             }
-            this.ctx.restore(); // Gölgeyi sıfırla
+            this.ctx.restore();
 
             // Full Info
             if (this.settings.espNameTags) {
@@ -635,24 +637,27 @@
                 this.ctx.font = "bold 14px Rajdhani, sans-serif";
                 this.ctx.fillStyle = "#FFFFFF";
                 this.ctx.strokeStyle = "#000000";
-                this.ctx.lineWidth = 2;
+                this.ctx.lineWidth = 2.5;
                 this.ctx.textAlign = "left";
 
                 let textY = ymin + 1;
+                let lineSpacing = 16;
+                
                 this.ctx.strokeText(player.playerName || 'Player', xmax + 5, textY);
                 this.ctx.fillText(player.playerName || 'Player', xmax + 5, textY);
+                textY += lineSpacing;
 
                 if (player.health) {
-                    textY += 16;
                     const healthText = `♥ ${player.health}`;
                     this.ctx.strokeText(healthText, xmax + 5, textY);
                     this.ctx.fillText(healthText, xmax + 5, textY);
+                    textY += lineSpacing;
                 }
 
                 if (player.weapon && this.settings.espWeaponIcons) {
-                    textY += 16;
-                    this.ctx.strokeText(player.weapon.name, xmax + 5, textY);
-                    this.ctx.fillText(player.weapon.name, xmax + 5, textY);
+                    const weaponText = `❖ ${player.weapon.name}`;
+                    this.ctx.strokeText(weaponText, xmax + 5, textY);
+                    this.ctx.fillText(weaponText, xmax + 5, textY);
                 }
                 this.ctx.restore();
             }
@@ -703,7 +708,7 @@
                 this.players = [];
                 this.stopAutoFire();
                 clearTimeout(this.bhopLoopTimeout);
-                this.myTeamId = null; // BUG FIX: Takım ID'sini yeni tur için sıfırla
+                this.myTeamId = null;
                 this.camera = null;
                 return;
             }
