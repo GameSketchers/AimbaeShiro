@@ -504,9 +504,7 @@ window[cheatInstanceId] = function() {
                 if (screenPos) { onScreen = true; xmin = Math.min(xmin, screenPos.x); xmax = Math.max(xmax, screenPos.x); ymin = Math.min(ymin, screenPos.y); ymax = Math.max(ymax, screenPos.y); }
             }
             if (!onScreen) return;
-            if (!isFinite(xmin) || !isFinite(xmax) || !isFinite(ymin) || !isFinite(ymax)) {
-                return;
-            }
+            if (!isFinite(xmin + xmax + ymin + ymax)) return;
             const boxWidth = xmax - xmin, boxHeight = ymax - ymin;
             this.ctx.save();
             if (this.settings.espLines) {
