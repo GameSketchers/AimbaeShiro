@@ -375,7 +375,7 @@ window[cheatInstanceId] = function() {
                     this.controls.update(400);
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
-                        if(this.me.aimVal && this.me.reloadTimer === 0 && !this.me.didShoot){console.log("ateş");inputPacket[gameInputIndices.shoot] = 1;}
+                        if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){console.log("ateş");inputPacket[gameInputIndices.shoot] = 1;}
                     }
                 }
             }
