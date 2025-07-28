@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.4.0
+// @version      1.4.1
 // @description  A powerful anime-themed cheat suite with a non-silent Aimbot, Unlock Skins, glowing & animated ESP Box, Energy Trail, Healthbars, and more. Powered by an advanced injection method.
 // @description:tr Fiziksel nişan alan Aimbot, Tüm Kozmetikleri Açma, parlak & animasyonlu ESP Kutusu, Enerji İzi, Can Barları ve daha fazlasını içeren güçlü, anime temalı bir hile aracı. Gelişmiş bir enjeksiyon yöntemiyle güçlendirilmiştir.
 // @description:ja 非サイレントエイムボット、全スキンアンロック、輝くアニメーションESPボックス、エナジートレイル、ヘルスバーなどを備えた強力なアニメ風チートスイート。高度な注入方法を搭載。
