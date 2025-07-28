@@ -22,7 +22,6 @@
 // @tag          games
 // @license      MIT
 // @noframes
-// @require      https://unpkg.com/three@0.150.0/build/three.min.js
 // ==/UserScript==
 
 const cheatInstanceId = '_' + Math.random().toString(36).slice(2);
@@ -43,15 +42,17 @@ window[cheatInstanceId] = function() {
             this.controls = null;
             this.overlay = null;
             this.ctx = null;
+            this.socket = null;
+            this.skins = null;
             this.scale = 1;
-            this.three = window.THREE;
+            this.three = null;
 
             this.PLAYER_HEIGHT = 11;
             this.PLAYER_WIDTH = 4;
             this.CROUCH_FACTOR = 3;
 
-            this.tempVector = new this.three.Vector3();
-            this.cameraPos = new this.three.Vector3();
+            this.tempVector = null;
+            this.cameraPos = null;
 
             this.isProxy = Symbol('isProxy');
             this.rightMouseDown = false;
@@ -164,6 +165,19 @@ window[cheatInstanceId] = function() {
                     },
                     get() { return this['_canvas']; },
                 },
+                THREE: {
+                    configurable: true,
+                    set(value) {
+                        if(cheatInstance.three == null){
+                            console.log("🌸 AimbaeShiro: THREE object captured!");
+                            cheatInstance.three = value;
+                            cheatInstance.tempVector = new value.Vector3();
+                            cheatInstance.cameraPos = new value.Vector3();
+                        }
+                        this['_value'] = value;
+                    },
+                    get() { return this['_value']; },
+                },
                 skins: {
                     set(skinsArray) {
                         this[originalSkinsSymbol] = skinsArray;
@@ -175,6 +189,24 @@ window[cheatInstanceId] = function() {
                     get() {
                         return cheatInstance.settings.unlockSkins && this.stats ? this[localSkinsSymbol] : this[originalSkinsSymbol];
                     },
+                },
+                events: {
+                    configurable: true,
+                    set(eventEmitter) {
+                        this['_events'] = eventEmitter;
+                        if (this.ahNum === 0) {
+                            cheatInstance.socket = this;
+                            this.send = new Proxy(this.send, {
+                                apply(target, thisArg, [type, data]) {
+                                    if (type === 'en') {
+                                        cheatInstance.skins = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17] };
+                                    }
+                                    return Reflect.apply(...arguments);
+                                }
+                            });
+                        }
+                    },
+                    get() { return this['_events']; },
                 },
                 idleTimer: {
                     enumerable: false,
@@ -268,8 +300,8 @@ window[cheatInstanceId] = function() {
                 }
             }
 
-            if (this.settings.autoNuke && Object.keys(this.me.streaks).length && this.game.socket?.send) {
-                this.game.socket.send('k', 0);
+            if (this.settings.autoNuke && Object.keys(this.me.streaks).length && this.socket?.send) {
+                this.socket.send('k', 0);
             }
 
             if (this.settings.autoReload && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && this.me.ammos[this.me.weapon.secondary ? 1 : 0] === 0 && this.me.reloadTimer === 0) {
@@ -343,7 +375,7 @@ window[cheatInstanceId] = function() {
                     this.controls.update(400);
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
-                        if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
+                        if(this.me.aimVal && this.me.reloadTimer === 0 && !this.me.didShoot){console.log("ateş");inputPacket[gameInputIndices.shoot] = 1;}
                     }
                 }
             }
