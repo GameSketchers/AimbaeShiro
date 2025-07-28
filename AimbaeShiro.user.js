@@ -594,7 +594,7 @@ const observer = new MutationObserver(function (mutations) {
             for (const node of mutation.addedNodes) {
                 if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
                     node.remove(); observer.disconnect();
-                    const modifiedGameScript = downloadFileSync('https://raw.githubusercontent.com/GameSketchers/AimbaeShiro/refs/heads/main/GameSource/game.js');
+                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
                     if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
                                             } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
