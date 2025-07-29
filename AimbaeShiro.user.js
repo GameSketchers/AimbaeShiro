@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.4.1
+// @version      1.4.2
 // @description  A powerful anime-themed cheat suite with a non-silent Aimbot, Unlock Skins, glowing & animated ESP Box, Energy Trail, Healthbars, and more. Powered by an advanced injection method.
 // @description:tr Fiziksel nişan alan Aimbot, Tüm Kozmetikleri Açma, parlak & animasyonlu ESP Kutusu, Enerji İzi, Can Barları ve daha fazlasını içeren güçlü, anime temalı bir hile aracı. Gelişmiş bir enjeksiyon yöntemiyle güçlendirilmiştir.
 // @description:ja 非サイレントエイムボット、全スキンアンロック、輝くアニメーションESPボックス、エナジートレイル、ヘルスバーなどを備えた強力なアニメ風チートスイート。高度な注入方法を搭載。
@@ -196,10 +196,34 @@ window[cheatInstanceId] = function() {
                         this['_events'] = eventEmitter;
                         if (this.ahNum === 0) {
                             cheatInstance.socket = this;
+                            cheatInstance.wsSend = this.send.bind(this);
                             this.send = new Proxy(this.send, {
                                 apply(target, thisArg, [type, data]) {
                                     if (type === 'en') {
                                         cheatInstance.skins = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17] };
+                                    }
+                                    return Reflect.apply(...arguments);
+                                }
+                            });
+
+                            this['_dispatchEvent'] = new Proxy(this['_dispatchEvent'], {
+                                apply(target, thisArg, [eventName, eventData]) {
+                                    if (cheatInstance.settings.unlockSkins && eventName === '0') {
+                                        let playerData = eventData[0];
+                                        let playerStride = 38;
+
+                                        while (playerData.length % playerStride !== 0) {
+                                            playerStride++;
+                                        }
+
+                                        for (let i = 0; i < playerData.length; i += playerStride) {
+                                            playerData[i + 12] = [cheatInstance.skins.main, cheatInstance.skins.secondary];
+                                            playerData[i + 13] = cheatInstance.skins.hat;
+                                            playerData[i + 14] = cheatInstance.skins.body;
+                                            playerData[i + 19] = cheatInstance.skins.knife;
+                                            playerData[i + 24] = cheatInstance.skins.dye;
+                                            playerData[i + 33] = cheatInstance.skins.waist;
+                                        }
                                     }
                                     return Reflect.apply(...arguments);
                                 }
@@ -221,8 +245,15 @@ window[cheatInstanceId] = function() {
                 cnBSeen: {
                     set(value) { this.inView = value; },
                     get() {
-                        const isEnemy = !cheatInstance.isDefined(cheatInstance.me) || !cheatInstance.me.team || cheatInstance.me.team !== this.team;
-                        return this.inView || (isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espLines || cheatInstance.settings.espNameTags));
+                        const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team);
+                        return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inView;
+                    },
+                },
+                canBSeen: {
+                    set(value) { this.inViewBot = value; },
+                    get() {
+                        const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team);
+                        return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inViewBot;
                     },
                 },
                 useLooseClient: {
@@ -264,10 +295,6 @@ window[cheatInstanceId] = function() {
                 });
             }
 
-            this.espCanvas.width = window.innerWidth;
-            this.espCanvas.height = window.innerHeight;
-            this.ctx.clearRect(0, 0, this.espCanvas.width, this.espCanvas.height);
-
             if (this.renderer.scene) {
                 this.renderer.scene.traverse(child => {
                     if (child.material) {
@@ -278,10 +305,14 @@ window[cheatInstanceId] = function() {
                 });
             }
 
+            this.ctx.save();
+
             for (const player of this.game.players.list) {
                 if (player.isYou || !player.active || !player.objInstances) continue;
                 this.drawCanvasESP(player);
             }
+
+            this.ctx.restore();
         }
 
         onProcessInputs(inputPacket, player) {
@@ -339,9 +370,9 @@ window[cheatInstanceId] = function() {
                 /*inputPacket[gameInputIndices.ydir] = yaw * 1000;
                 inputPacket[gameInputIndices.xdir] = compensatedPitch * 1000;*/
 
-                if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal > 0) {
+                if (this.settings.autoFireEnabled) {
                     inputPacket[gameInputIndices.scope] = 1;
-                    inputPacket[gameInputIndices.shoot] = 1;
+                    if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
                 }
             } else if (target && this.me.weapon.melee) {
 
@@ -375,7 +406,7 @@ window[cheatInstanceId] = function() {
                     this.controls.update(400);
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
-                        if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){console.log("ateş");inputPacket[gameInputIndices.shoot] = 1;}
+                        if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
                     }
                 }
             }
@@ -393,8 +424,6 @@ window[cheatInstanceId] = function() {
             const menuHTML = `<div class="anonimbiri-menu-container" id="anonimbiri-cheatMenu"><div class="anonimbiri-menu-header" id="anonimbiri-menuHeader"><div class="anonimbiri-close-btn" id="anonimbiri-closeBtn"><svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg></div></div><div class="anonimbiri-tab-container"><div class="anonimbiri-tab active" data-tab="aimbot">AIMBOT</div><div class="anonimbiri-tab" data-tab="esp">ESP</div><div class="anonimbiri-tab" data-tab="misc">MISC</div><div class="anonimbiri-tab" data-tab="hotkeys">HOTKEYS</div></div><div class="anonimbiri-tab-content"><div class="anonimbiri-tab-pane active" id="anonimbiri-tab-aimbot">${this.createMenuItemHTML('toggle','aimbotEnabled','Aimbot Enabled',animeIcons.aimbot)}${this.createMenuItemHTML('toggle','aimbotOnRightMouse','Right Mouse Trigger',animeIcons.rightMouse)}${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check',animeIcons.wallCheck)}${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check',animeIcons.teamCheck)}${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire',animeIcons.autoFire)}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">${this.createMenuItemHTML('toggle','espTeamCheck','Team Check',animeIcons.teamCheck)}${this.createMenuItemHTML('toggle','espLines','Energy Trail ESP',animeIcons.espLines)}${this.createMenuItemHTML('toggle','espSquare','Glowing Box ESP',animeIcons.espSquare)}${this.createMenuItemHTML('toggle','espNameTags','Full Info (Name/HP/Wpn)',animeIcons.nameTags)}${this.createMenuItemHTML('toggle','espWeaponIcons','Show Weapon (in Full Info)',animeIcons.weaponIcons)}${this.createMenuItemHTML('color','espColor','Trail Color',animeIcons.colorPicker)}${this.createMenuItemHTML('color','boxColor','Box & Info Color',animeIcons.colorPicker)}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-misc">${this.createMenuItemHTML('toggle','wireframeEnabled','Wireframe',animeIcons.wireframe)}${this.createMenuItemHTML('toggle','unlockSkins','Unlock All Skins',animeIcons.unlockSkins)}${this.createMenuItemHTML('toggle','bhopEnabled','Bunny Hop',animeIcons.bunnyHop)}${this.createMenuItemHTML('toggle','autoNuke','Auto Nuke',animeIcons.autoNuke)}${this.createMenuItemHTML('toggle','antikick','Anti Kick',animeIcons.antiKick)}${this.createMenuItemHTML('toggle','autoReload','Auto Reload',animeIcons.autoReload)}</div><div class="anonimbiri-tab-pane" id="anonimbiri-tab-hotkeys">${this.createMenuItemHTML('hotkey','toggleMenu','Toggle Menu',animeIcons.hotkeys)}${this.createMenuItemHTML('hotkey','aimbotEnabled','Toggle Aimbot',animeIcons.aimbot)}${this.createMenuItemHTML('hotkey','aimbotWallCheck','Toggle Wall Check',animeIcons.wallCheck)}${this.createMenuItemHTML('hotkey','aimbotTeamCheck','Toggle Aimbot Team',animeIcons.teamCheck)}${this.createMenuItemHTML('hotkey','espTeamCheck','Toggle ESP Team',animeIcons.teamCheck)}${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info',animeIcons.nameTags)}${this.createMenuItemHTML('hotkey','espWeaponIcons','Toggle Weapon Icon',animeIcons.weaponIcons)}${this.createMenuItemHTML('hotkey','autoFireEnabled','Toggle Auto Fire',animeIcons.autoFire)}${this.createMenuItemHTML('hotkey','espLines','Toggle Energy Trail',animeIcons.espLines)}${this.createMenuItemHTML('hotkey','espSquare','Toggle Glowing Box',animeIcons.espSquare)}${this.createMenuItemHTML('hotkey','wireframeEnabled','Toggle Wireframe',animeIcons.wireframe)}${this.createMenuItemHTML('hotkey','unlockSkins','Toggle Unlock Skins',animeIcons.unlockSkins)}${this.createMenuItemHTML('hotkey','bhopEnabled','Toggle Bunny Hop',animeIcons.bunnyHop)}</div></div></div>`;
 
             const container = document.createElement('div'); container.innerHTML = menuHTML; document.body.appendChild(container);
-            this.espCanvas = document.createElement('canvas'); this.espCanvas.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:1001;'; document.body.appendChild(this.espCanvas);
-            this.ctx = this.espCanvas.getContext('2d');
             this.gui = document.getElementById('anonimbiri-cheatMenu');
             this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
             if (this.settings.menuLeftPx !== null && this.settings.menuTopPx !== null) { this.gui.style.left = `${this.settings.menuLeftPx}px`; this.gui.style.top = `${this.settings.menuTopPx}px`; } else { setTimeout(() => { const t = this.gui.getBoundingClientRect(); this.gui.style.left = `calc(50% - ${t.width / 2}px)`; this.gui.style.top = `calc(50% - ${t.height / 2}px)`; const e = this.gui.getBoundingClientRect(); this.settings.menuLeftPx = e.left; this.settings.menuTopPx = e.top; this.saveSettings('aimbaeshiro_settings', this.settings); }, 100); }
@@ -513,10 +542,10 @@ window[cheatInstanceId] = function() {
         }
 
         world2Screen(worldPosition) {
-            if (!this.renderer?.camera) return null;
+            if (!this.renderer?.camera || !this.overlay?.canvas) return null;
             const pos = worldPosition.clone(); pos.project(this.renderer.camera);
             if (pos.z > 1) return null;
-            return { x: (pos.x + 1) / 2 * this.espCanvas.width, y: (-pos.y + 1) / 2 * this.espCanvas.height, };
+            return { x: (pos.x + 1) / 2 * this.overlay.canvas.width, y: (-pos.y + 1) / 2 * this.overlay.canvas.height, };
         }
 
         drawCanvasESP(player) {
@@ -540,7 +569,7 @@ window[cheatInstanceId] = function() {
             const boxWidth = xmax - xmin, boxHeight = ymax - ymin;
             this.ctx.save();
             if (this.settings.espLines) {
-                const startX = this.espCanvas.width / 2, startY = this.espCanvas.height, endX = xmin + boxWidth / 2, endY = ymax, gradient = this.ctx.createLinearGradient(startX, startY, endX, endY), trailColor = this.settings.espColor;
+                const startX = this.overlay.canvas.width / 2, startY = this.overlay.canvas.height, endX = xmin + boxWidth / 2, endY = ymax, gradient = this.ctx.createLinearGradient(startX, startY, endX, endY), trailColor = this.settings.espColor;
                 const hexToRgba = (hex, alpha) => { let r=0,g=0,b=0; if (hex.length == 7) { r=parseInt(hex.slice(1,3),16); g=parseInt(hex.slice(3,5),16); b=parseInt(hex.slice(5,7),16); } return `rgba(${r},${g},${b},${alpha})`; };
                 gradient.addColorStop(0, hexToRgba(trailColor, 0.7)); gradient.addColorStop(1, hexToRgba(trailColor, 0));
                 this.ctx.lineWidth = 3; this.ctx.strokeStyle = gradient; this.ctx.shadowColor = trailColor; this.ctx.shadowBlur = 15;
