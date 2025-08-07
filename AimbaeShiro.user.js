@@ -170,7 +170,6 @@ window[cheatInstanceId] = function() {
                     set(value) {
                         if(cheatInstance.three == null){
                             console.log("🌸 AimbaeShiro: THREE object captured!");
-                                                    console.log(cheatInstance);
                             cheatInstance.three = value;
                             cheatInstance.tempVector = new value.Vector3();
                             cheatInstance.cameraPos = new value.Vector3();
@@ -183,7 +182,7 @@ window[cheatInstanceId] = function() {
                     set(skinsArray) {
                         this[originalSkinsSymbol] = skinsArray;
                         if (!this[localSkinsSymbol]) {
-                            this[localSkinsSymbol] = Array.from({ length: 25000 }, (_, i) => ({ ind: i, cnt: 0x1, }));
+                            this[localSkinsSymbol] = Array.from({ length: 25000 }, (_, i) => ({ ind: i, cnt: 1, }));
                         }
                         return skinsArray;
                     },
@@ -191,22 +190,10 @@ window[cheatInstanceId] = function() {
                         return cheatInstance.settings.unlockSkins && this.stats ? this[localSkinsSymbol] : this[originalSkinsSymbol];
                     },
                 },
-                dispatchEvent: {
-                    set(v) {
-                        console.log(v);
-                        return v;
-                    },
-                    get(v) {
-                        console.log(v);
-                        return v;
-                    },
-                },
                 events: {
                     configurable: true,
                     set(eventEmitter) {
                         this['_events'] = eventEmitter;
-                        console.log(eventEmitter);
-                        console.log(this);
                         if (this.ahNum === 0) {
                             cheatInstance.socket = this;
                             cheatInstance.wsSend = this.send.bind(this);
@@ -267,23 +254,6 @@ window[cheatInstanceId] = function() {
                     get() {
                         const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team);
                         return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inViewBot;
-                    },
-                },
-                useLooseClient: {
-                    enumerable: false,
-                    get() { return this['_ulc']; },
-                    set(value) {
-                        cheatInstance.waitFor(() => window.instructionsUpdate).then((instructions) => {
-                            new MutationObserver((mutations) => {
-                                const target = mutations[0].target;
-                                if (location.host === 'krunker.io' && target.textContent.includes('Connection Banned')) {
-                                    localStorage.removeItem('krunker_token');
-                                    alert("You Have Been Banned And Signed Out, You Will Now Be Redirected to Krunker's Proxy 'browserfps'");
-                                    location.assign('https://browserfps.com/');
-                                }
-                            }).observe(instructions, { attributes: true, attributeFilter: ['style'] });
-                        });
-                        this['_ulc'] = value;
                     },
                 },
             });
@@ -375,11 +345,6 @@ window[cheatInstanceId] = function() {
                 const compensatedPitch = pitch - (0.3 * this.me.recoilAnimY);
 
                 this.lookDir(compensatedPitch, yaw);
-                /*this.controls.target = {
-                    xD: compensatedPitch,
-                    yD: yaw,
-                };
-                this.controls.update(400);*/
 
                 // süper silent için
                 /*inputPacket[gameInputIndices.ydir] = yaw * 1000;
@@ -411,6 +376,7 @@ window[cheatInstanceId] = function() {
                     }
                 } else if (distance <= throwRange && this.me.weapon.canThrow) {
                     this.lookDir(compensatedPitch, yaw);
+                    
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
                         if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
@@ -532,7 +498,7 @@ window[cheatInstanceId] = function() {
         getDistance(p1, p2) { return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2)); }
         getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
         getXDirection(t,e,o,i,s,n){const r=s-e,a=this.getDistance({x:t,y:e,z:o},{x:i,y:s,z:n});return Math.asin(r/a)}
-        getTargetPosition(t){const e=this.PLAYER_HEIGHT/5.5;return{x:t.x,y:t.y-t.crouchVal*this.CROUCH_FACTOR+e,z:t.z}}
+        getTargetPosition(t){const e=this.PLAYER_HEIGHT/6.6;return{x:t.x,y:t.y-t.crouchVal*this.CROUCH_FACTOR+e,z:t.z}}
         isPlayerVisible(player) { if (!this.game?.map?.manager?.canSee) return true; return this.game.map.manager.canSee(this.me, player.x, player.y, player.z); }
         async waitFor(condition, timeout = Infinity) {
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -640,7 +606,7 @@ const observer = new MutationObserver(function (mutations) {
             for (const node of mutation.addedNodes) {
                 if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
                     node.remove(); observer.disconnect();
-                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/anonimbiri-IsBack/test@main/game4.js`);
+                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
                     if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
                                             } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
