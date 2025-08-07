@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.4.2
+// @version      1.4.3
 // @description  A powerful anime-themed cheat suite with a non-silent Aimbot, Unlock Skins, glowing & animated ESP Box, Energy Trail, Healthbars, and more. Powered by an advanced injection method.
 // @description:tr Fiziksel nişan alan Aimbot, Tüm Kozmetikleri Açma, parlak & animasyonlu ESP Kutusu, Enerji İzi, Can Barları ve daha fazlasını içeren güçlü, anime temalı bir hile aracı. Gelişmiş bir enjeksiyon yöntemiyle güçlendirilmiştir.
 // @description:ja 非サイレントエイムボット、全スキンアンロック、輝くアニメーションESPボックス、エナジートレイル、ヘルスバーなどを備えた強力なアニメ風チートスイート。高度な注入方法を搭載。
@@ -170,6 +170,7 @@ window[cheatInstanceId] = function() {
                     set(value) {
                         if(cheatInstance.three == null){
                             console.log("🌸 AimbaeShiro: THREE object captured!");
+                                                    console.log(cheatInstance);
                             cheatInstance.three = value;
                             cheatInstance.tempVector = new value.Vector3();
                             cheatInstance.cameraPos = new value.Vector3();
@@ -182,7 +183,7 @@ window[cheatInstanceId] = function() {
                     set(skinsArray) {
                         this[originalSkinsSymbol] = skinsArray;
                         if (!this[localSkinsSymbol]) {
-                            this[localSkinsSymbol] = Array.from({ length: 25000 }, (_, i) => ({ ind: i, cnt: 1, }));
+                            this[localSkinsSymbol] = Array.from({ length: 25000 }, (_, i) => ({ ind: i, cnt: 0x1, }));
                         }
                         return skinsArray;
                     },
@@ -190,10 +191,22 @@ window[cheatInstanceId] = function() {
                         return cheatInstance.settings.unlockSkins && this.stats ? this[localSkinsSymbol] : this[originalSkinsSymbol];
                     },
                 },
+                dispatchEvent: {
+                    set(v) {
+                        console.log(v);
+                        return v;
+                    },
+                    get(v) {
+                        console.log(v);
+                        return v;
+                    },
+                },
                 events: {
                     configurable: true,
                     set(eventEmitter) {
                         this['_events'] = eventEmitter;
+                        console.log(eventEmitter);
+                        console.log(this);
                         if (this.ahNum === 0) {
                             cheatInstance.socket = this;
                             cheatInstance.wsSend = this.send.bind(this);
@@ -336,6 +349,7 @@ window[cheatInstanceId] = function() {
             }
 
             if (this.settings.autoReload && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && this.me.ammos[this.me.weapon.secondary ? 1 : 0] === 0 && this.me.reloadTimer === 0) {
+                this.game.players.reload(this.me);
                 inputPacket[gameInputIndices.reload] = 1;
             }
 
@@ -360,11 +374,12 @@ window[cheatInstanceId] = function() {
                 const pitch = this.getXDirection(this.me.x, this.me.y, this.me.z, targetPos.x, targetPos.y, targetPos.z);
                 const compensatedPitch = pitch - (0.3 * this.me.recoilAnimY);
 
-                this.controls.target = {
+                this.lookDir(compensatedPitch, yaw);
+                /*this.controls.target = {
                     xD: compensatedPitch,
                     yD: yaw,
                 };
-                this.controls.update(400);
+                this.controls.update(400);*/
 
                 // süper silent için
                 /*inputPacket[gameInputIndices.ydir] = yaw * 1000;
@@ -389,21 +404,13 @@ window[cheatInstanceId] = function() {
                 const throwRange = 65.24113971486675;
 
                 if (distance <= closeRange) {
-                    this.controls.target = {
-                        xD: compensatedPitch,
-                        yD: yaw,
-                    };
-                    this.controls.update(400);
+                    this.lookDir(compensatedPitch, yaw);
 
                     if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal > 0) {
                         inputPacket[gameInputIndices.shoot] = 1;
                     }
                 } else if (distance <= throwRange && this.me.weapon.canThrow) {
-                    this.controls.target = {
-                        xD: compensatedPitch,
-                        yD: yaw,
-                    };
-                    this.controls.update(400);
+                    this.lookDir(compensatedPitch, yaw);
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
                         if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
@@ -541,6 +548,16 @@ window[cheatInstanceId] = function() {
             });
         }
 
+        lookDir(xDire, yDire) {
+            this.controls.object.rotation.y = yDire
+            this.controls.pchObjc.rotation.x = xDire;
+            this.controls.pchObjc.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.controls.pchObjc.rotation.x));
+            this.controls.yDr = (this.controls.pchObjc.rotation.x % Math.PI).round(3);
+            this.controls.xDr = (this.controls.object.rotation.y % Math.PI).round(3);
+            this.renderer.camera.updateProjectionMatrix();
+            this.renderer.updateFrustum();
+        }
+
         world2Screen(worldPosition) {
             if (!this.renderer?.camera || !this.overlay?.canvas) return null;
             const pos = worldPosition.clone(); pos.project(this.renderer.camera);
@@ -623,7 +640,7 @@ const observer = new MutationObserver(function (mutations) {
             for (const node of mutation.addedNodes) {
                 if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
                     node.remove(); observer.disconnect();
-                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
+                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/anonimbiri-IsBack/test@main/game4.js`);
                     if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
                                             } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
