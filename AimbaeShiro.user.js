@@ -67,6 +67,7 @@ window[cheatInstanceId] = function() {
                 aimbotTeamCheck: true,
                 autoFireEnabled: false,
                 fovSize: 90,
+                drawFovCircle: true,
                 espLines: true,
                 espSquare: true,
                 espNameTags: true,
@@ -209,7 +210,7 @@ window[cheatInstanceId] = function() {
                                     if(type === 'spry' && data){
                                         console.log(data);
                                         cheatInstance.spray = data;
-                                        message[0] = 4577; // gerçek bir free skin gönder ki başkaları anlamasın hile olduğunu
+                                        message[0] = 4577;
                                     }
                                     return target.apply(thisArg, [type, ...message]);
                                 }
@@ -304,18 +305,19 @@ window[cheatInstanceId] = function() {
 
             this.ctx.save();
 
-            if (this.settings.fovSize > 0) {
-                const fov = this.settings.fovSize;
+            if (this.settings.fovSize > 0 && this.settings.drawFovCircle && !this.settings.menuVisible) {
                 const centerX = this.overlay.canvas.width / 2;
                 const centerY = this.overlay.canvas.height / 2;
+                const radius = this.settings.fovSize;
 
                 this.ctx.beginPath();
-                this.ctx.arc(centerX, centerY, fov, 0, 2 * Math.PI, false);
-                this.ctx.strokeStyle = this.settings.espColor;
+                this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
                 this.ctx.lineWidth = 2;
-                this.ctx.shadowColor = this.settings.espColor;
+                this.ctx.strokeStyle = 'rgba(255, 0, 128, 0.7)';
+                this.ctx.shadowColor = 'rgba(255, 0, 128, 1)';
                 this.ctx.shadowBlur = 10;
                 this.ctx.stroke();
+                this.ctx.shadowBlur = 0;
             }
 
             for (const player of this.game.players.list) {
@@ -354,43 +356,24 @@ window[cheatInstanceId] = function() {
             // Aimbot
             let target = null;
             if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
-                const potentialTargets = this.game.players.list
-                .filter(p => {
-                    if (!this.isDefined(p) || p.isYou || !p.active || p.health <= 0) return false;
-                    if (this.settings.aimbotTeamCheck && this.isTeam(p)) return false;
-                    if (this.settings.aimbotWallCheck && !p.inView) return false;
+                let potentialTargets = this.game.players.list
+                    .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || p.inView))
+                    .sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
 
-                    if (this.settings.fovSize > 0) {
-                        const screenPos = this.world2Screen(new this.three.Vector3(p.x, p.y, p.z));
+                if (this.settings.fovSize > 0) {
+                    const fovRadius = this.settings.fovSize;
+                    const centerX = this.overlay.canvas.width / 2;
+                    const centerY = this.overlay.canvas.height / 2;
+
+                    potentialTargets = potentialTargets.filter(p => {
+                        const headPos = this.getTargetPosition(p);
+                        const screenPos = this.world2Screen(new this.three.Vector3(headPos.x, headPos.y, headPos.z));
                         if (!screenPos) return false;
 
-                        const centerX = this.overlay.canvas.width / 2;
-                        const centerY = this.overlay.canvas.height / 2;
-
-                        const dx = screenPos.x - centerX;
-                        const dy = screenPos.y - centerY;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-
-                        if (distance > this.settings.fovSize) {
-                            return false;
-                        }
-                    }
-                    return true;
-                })
-                .sort((a, b) => {
-
-                    if (this.settings.fovSize > 0) {
-                        const screenA = this.world2Screen(new this.three.Vector3(a.x, a.y, a.z)) || {x: Infinity, y: Infinity};
-                        const screenB = this.world2Screen(new this.three.Vector3(b.x, b.y, b.z)) || {x: Infinity, y: Infinity};
-                        const centerX = this.overlay.canvas.width / 2;
-                        const centerY = this.overlay.canvas.height / 2;
-                        const distA = Math.sqrt(Math.pow(screenA.x - centerX, 2) + Math.pow(screenA.y - centerY, 2));
-                        const distB = Math.sqrt(Math.pow(screenB.x - centerX, 2) + Math.pow(screenB.y - centerY, 2));
-                        return distA - distB;
-                    }
-
-                    return this.getDistance(this.me, a) - this.getDistance(this.me, b);
-                });
+                        const dist = Math.sqrt(Math.pow(screenPos.x - centerX, 2) + Math.pow(screenPos.y - centerY, 2));
+                        return dist <= fovRadius;
+                    });
+                }
 
                 target = potentialTargets[0] || null;
             }
@@ -453,7 +436,6 @@ window[cheatInstanceId] = function() {
             animeFontLink.href = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&display=swap';
             animeFontLink.rel = 'stylesheet';
             document.head.appendChild(animeFontLink);
-
 
             const menuCSS = `
             .anonimbiri-menu-container{font-family:'Orbitron',monospace;position:fixed;width:90vw;max-width:500px;background:rgba(10,10,10,.95);border:2px solid #ff0080;border-radius:15px;box-shadow:0 0 30px rgba(255,0,128,.5),inset 0 0 20px rgba(255,0,128,.1);backdrop-filter:blur(10px);animation:anonimbiri-menuGlow 2s ease-in-out infinite alternate,anonimbiri-slideIn .5s ease-out;user-select:none;z-index:1000;display:none;opacity:0;transition:opacity .3s ease-out,transform .3s ease-out}
@@ -521,8 +503,7 @@ window[cheatInstanceId] = function() {
             .anonimbiri-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #ff0080;box-shadow:0 0 12px rgba(255,0,128,.6);cursor:pointer}
             .anonimbiri-slider::-moz-range-track{height:6px;background:linear-gradient(90deg,rgba(255,0,128,.35),rgba(255,77,166,.35));border:1px solid rgba(255,0,128,.35);border-radius:999px}
             .anonimbiri-slider-value{color:#fff;font-weight:800;letter-spacing:.5px;font-size:12px;min-width:40px;text-align:center;background:rgba(255,0,128,.18);border:1px solid rgba(255,0,128,.45);border-radius:6px;padding:3px 8px;box-shadow:inset 0 0 8px rgba(255,0,128,.35)}
-            .anonimbiri-menu-item:hover .anonimbiri-slider-value{background:#ff0080}
-            `;
+            .anonimbiri-menu-item:hover .anonimbiri-slider-value{background:#ff0080}`;
 
             const style = document.createElement('style');
             style.textContent = menuCSS;
@@ -552,85 +533,116 @@ window[cheatInstanceId] = function() {
             const menuHTML = `
             <div class="anonimbiri-menu-container" id="anonimbiri-cheatMenu">
                 <div class="anonimbiri-menu-header" id="anonimbiri-menuHeader">
-                    <div class="anonimbiri-close-btn" id="anonimbiri-closeBtn">
-                        <svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
-                    </div>
+                <div class="anonimbiri-close-btn" id="anonimbiri-closeBtn">
+                    <svg viewBox="0 0 24 24"><path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/></svg>
+                </div>
                 </div>
 
                 <div class="anonimbiri-tab-container">
-                    <div class="anonimbiri-tab active" data-tab="aimbot">AIMBOT</div>
-                    <div class="anonimbiri-tab" data-tab="esp">ESP</div>
-                    <div class="anonimbiri-tab" data-tab="misc">MISC</div>
-                    <div class="anonimbiri-tab" data-tab="hotkeys">HOTKEYS</div>
+                <div class="anonimbiri-tab active" data-tab="aimbot">AIMBOT</div>
+                <div class="anonimbiri-tab" data-tab="esp">ESP</div>
+                <div class="anonimbiri-tab" data-tab="misc">MISC</div>
+                <div class="anonimbiri-tab" data-tab="hotkeys">HOTKEYS</div>
                 </div>
 
                 <div class="anonimbiri-tab-content">
-                    <div class="anonimbiri-tab-pane active" id="anonimbiri-tab-aimbot">
-                        ${this.createMenuItemHTML('toggle','aimbotEnabled','Aimbot Enabled', neonIcons.aimbot)}
-                        ${this.createMenuItemHTML('toggle','aimbotOnRightMouse','Right Mouse Trigger', neonIcons.rightMouse)}
-                        ${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check', neonIcons.wallCheck)}
-                        ${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check', neonIcons.teamCheck)}
-                        ${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire', neonIcons.autoFire)}
-                        ${this.createMenuItemHTML('slider','fovSize','FOV Size', neonIcons.fov)}
-                    </div>
+                <div class="anonimbiri-tab-pane active" id="anonimbiri-tab-aimbot">
+                    ${this.createMenuItemHTML('toggle','aimbotEnabled','Aimbot Enabled', neonIcons.aimbot)}
+                    ${this.createMenuItemHTML('toggle','aimbotOnRightMouse','Right Mouse Trigger', neonIcons.rightMouse)}
+                    ${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check', neonIcons.wallCheck)}
+                    ${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check', neonIcons.teamCheck)}
+                    ${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire', neonIcons.autoFire)}
+                    ${this.createMenuItemHTML('slider','fovSize','FOV Size', neonIcons.fov)}
+                    ${this.createMenuItemHTML('toggle','drawFovCircle','Draw FOV Circle', neonIcons.espSquare)}
+                </div>
 
-                    <div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">
-                        ${this.createMenuItemHTML('toggle','espTeamCheck','Team Check', neonIcons.teamCheck)}
-                        ${this.createMenuItemHTML('toggle','espLines','Energy Trail ESP', neonIcons.espLines)}
-                        ${this.createMenuItemHTML('toggle','espSquare','Glowing Box ESP', neonIcons.espSquare)}
-                        ${this.createMenuItemHTML('toggle','espNameTags','Full Info (Name/HP/Wpn)', neonIcons.nameTags)}
-                        ${this.createMenuItemHTML('toggle','espWeaponIcons','Show Weapon (in Full Info)', neonIcons.weaponIcons)}
-                        ${this.createMenuItemHTML('color','espColor','Trail Color', neonIcons.colorPicker)}
-                        ${this.createMenuItemHTML('color','boxColor','Box & Info Color', neonIcons.colorPicker)}
-                    </div>
+                <div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">
+                    ${this.createMenuItemHTML('toggle','espTeamCheck','Team Check', neonIcons.teamCheck)}
+                    ${this.createMenuItemHTML('toggle','espLines','Energy Trail ESP', neonIcons.espLines)}
+                    ${this.createMenuItemHTML('toggle','espSquare','Glowing Box ESP', neonIcons.espSquare)}
+                    ${this.createMenuItemHTML('toggle','espNameTags','Full Info (Name/HP/Wpn)', neonIcons.nameTags)}
+                    ${this.createMenuItemHTML('toggle','espWeaponIcons','Show Weapon (in Full Info)', neonIcons.weaponIcons)}
+                    ${this.createMenuItemHTML('color','espColor','Trail Color', neonIcons.colorPicker)}
+                    ${this.createMenuItemHTML('color','boxColor','Box & Info Color', neonIcons.colorPicker)}
+                </div>
 
-                    <div class="anonimbiri-tab-pane" id="anonimbiri-tab-misc">
-                        ${this.createMenuItemHTML('toggle','wireframeEnabled','Wireframe', neonIcons.wireframe)}
-                        ${this.createMenuItemHTML('toggle','unlockSkins','Unlock All Skins', neonIcons.unlockSkins)}
-                        ${this.createMenuItemHTML('toggle','bhopEnabled','Bunny Hop', neonIcons.bunnyHop)}
-                        ${this.createMenuItemHTML('toggle','autoNuke','Auto Nuke', neonIcons.autoNuke)}
-                        ${this.createMenuItemHTML('toggle','antikick','Anti Kick', neonIcons.antiKick)}
-                        ${this.createMenuItemHTML('toggle','autoReload','Auto Reload', neonIcons.autoReload)}
-                    </div>
+                <div class="anonimbiri-tab-pane" id="anonimbiri-tab-misc">
+                    ${this.createMenuItemHTML('toggle','wireframeEnabled','Wireframe', neonIcons.wireframe)}
+                    ${this.createMenuItemHTML('toggle','unlockSkins','Unlock All Skins', neonIcons.unlockSkins)}
+                    ${this.createMenuItemHTML('toggle','bhopEnabled','Bunny Hop', neonIcons.bunnyHop)}
+                    ${this.createMenuItemHTML('toggle','autoNuke','Auto Nuke', neonIcons.autoNuke)}
+                    ${this.createMenuItemHTML('toggle','antikick','Anti Kick', neonIcons.antiKick)}
+                    ${this.createMenuItemHTML('toggle','autoReload','Auto Reload', neonIcons.autoReload)}
+                </div>
 
-                    <div class="anonimbiri-tab-pane" id="anonimbiri-tab-hotkeys">
-                        ${this.createMenuItemHTML('hotkey','toggleMenu','Toggle Menu', neonIcons.hotkeys)}
-                        ${this.createMenuItemHTML('hotkey','aimbotEnabled','Toggle Aimbot', neonIcons.aimbot)}
-                        ${this.createMenuItemHTML('hotkey','aimbotWallCheck','Toggle Wall Check', neonIcons.wallCheck)}
-                        ${this.createMenuItemHTML('hotkey','aimbotTeamCheck','Toggle Aimbot Team', neonIcons.teamCheck)}
-                        ${this.createMenuItemHTML('hotkey','espTeamCheck','Toggle ESP Team', neonIcons.teamCheck)}
-                        ${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info', neonIcons.nameTags)}
-                        ${this.createMenuItemHTML('hotkey','espWeaponIcons','Toggle Weapon Icon', neonIcons.weaponIcons)}
-                        ${this.createMenuItemHTML('hotkey','autoFireEnabled','Toggle Auto Fire', neonIcons.autoFire)}
-                        ${this.createMenuItemHTML('hotkey','espLines','Toggle Energy Trail', neonIcons.espLines)}
-                        ${this.createMenuItemHTML('hotkey','espSquare','Toggle Glowing Box', neonIcons.espSquare)}
-                        ${this.createMenuItemHTML('hotkey','wireframeEnabled','Toggle Wireframe', neonIcons.wireframe)}
-                        ${this.createMenuItemHTML('hotkey','unlockSkins','Toggle Unlock Skins', neonIcons.unlockSkins)}
-                        ${this.createMenuItemHTML('hotkey','bhopEnabled','Toggle Bunny Hop', neonIcons.bunnyHop)}
-                    </div>
+                <div class="anonimbiri-tab-pane" id="anonimbiri-tab-hotkeys">
+                    ${this.createMenuItemHTML('hotkey','toggleMenu','Toggle Menu', neonIcons.hotkeys)}
+                    ${this.createMenuItemHTML('hotkey','aimbotEnabled','Toggle Aimbot', neonIcons.aimbot)}
+                    ${this.createMenuItemHTML('hotkey','aimbotWallCheck','Toggle Wall Check', neonIcons.wallCheck)}
+                    ${this.createMenuItemHTML('hotkey','aimbotTeamCheck','Toggle Aimbot Team', neonIcons.teamCheck)}
+                    ${this.createMenuItemHTML('hotkey','espTeamCheck','Toggle ESP Team', neonIcons.teamCheck)}
+                    ${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info', neonIcons.nameTags)}
+                    ${this.createMenuItemHTML('hotkey','espWeaponIcons','Toggle Weapon Icon', neonIcons.weaponIcons)}
+                    ${this.createMenuItemHTML('hotkey','autoFireEnabled','Toggle Auto Fire', neonIcons.autoFire)}
+                    ${this.createMenuItemHTML('hotkey','espLines','Toggle Energy Trail', neonIcons.espLines)}
+                    ${this.createMenuItemHTML('hotkey','espSquare','Toggle Glowing Box', neonIcons.espSquare)}
+                    ${this.createMenuItemHTML('hotkey','wireframeEnabled','Toggle Wireframe', neonIcons.wireframe)}
+                    ${this.createMenuItemHTML('hotkey','unlockSkins','Toggle Unlock Skins', neonIcons.unlockSkins)}
+                    ${this.createMenuItemHTML('hotkey','bhopEnabled','Toggle Bunny Hop', neonIcons.bunnyHop)}
+                </div>
+                </div>
+            </div>`;
+
+            const hotkeyModalHTML = `
+            <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
+                <div class="anonimbiri-hotkey-content">
+                    <h2>Assign Hotkey</h2>
+                    <p>Press any key to assign it to <span id="anonimbiri-hotkeyFeatureName">...</span></p>
+                    <p>(Press ESC to cancel)</p>
                 </div>
             </div>`;
 
             const container = document.createElement('div');
-            container.innerHTML = menuHTML;
+            container.innerHTML = menuHTML + hotkeyModalHTML;
             document.body.appendChild(container);
+
             this.gui = document.getElementById('anonimbiri-cheatMenu');
             this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
-            if (this.settings.menuLeftPx !== null && this.settings.menuTopPx !== null) { this.gui.style.left = `${this.settings.menuLeftPx}px`; this.gui.style.top = `${this.settings.menuTopPx}px`; } else { setTimeout(() => { const t = this.gui.getBoundingClientRect(); this.gui.style.left = `calc(50% - ${t.width / 2}px)`; this.gui.style.top = `calc(50% - ${t.height / 2}px)`; const e = this.gui.getBoundingClientRect(); this.settings.menuLeftPx = e.left; this.settings.menuTopPx = e.top; this.saveSettings('aimbaeshiro_settings', this.settings); }, 100); }
+
+            if (this.settings.menuLeftPx !== null && this.settings.menuTopPx !== null) {
+                this.gui.style.left = `${this.settings.menuLeftPx}px`;
+                this.gui.style.top = `${this.settings.menuTopPx}px`;
+            } else {
+                setTimeout(() => {
+                const t = this.gui.getBoundingClientRect();
+                this.gui.style.left = `calc(50% - ${t.width / 2}px)`;
+                this.gui.style.top = `calc(50% - ${t.height / 2}px)`;
+                const e = this.gui.getBoundingClientRect();
+                this.settings.menuLeftPx = e.left;
+                this.settings.menuTopPx = e.top;
+                this.saveSettings('aimbaeshiro_settings', this.settings);
+                }, 100);
+            }
+
             if (this.settings.menuVisible) this.gui.classList.add('visible');
+
             this.updateAllGUIElements();
             this.makeMenuDraggable();
+            this.bindSliderUI();
         }
-
 
         createMenuItemHTML(type, setting, label, iconPath) {
             let controlHTML = '';
+            const iconSVG = `<svg class="anonimbiri-menu-item-icon" viewBox="0 0 24 24">${iconPath}</svg>`;
             switch (type) {
                 case 'toggle':
                     controlHTML = `<div class="anonimbiri-toggle-switch"></div>`;
                     break;
                 case 'color':
-                    controlHTML = `<div class="anonimbiri-color-container"><input type="color" class="anonimbiri-color-picker-input" data-setting="${setting}"><div class="anonimbiri-color-preview" data-setting="${setting}"></div></div>`;
+                    controlHTML = `<div class="anonimbiri-color-container">
+                        <input type="color" class="anonimbiri-color-picker-input" data-setting="${setting}">
+                        <div class="anonimbiri-color-preview" data-setting="${setting}"></div>
+                    </div>`;
                     break;
                 case 'hotkey':
                     controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}"></div>`;
@@ -643,15 +655,32 @@ window[cheatInstanceId] = function() {
                     </div>`;
                     break;
             }
-
             return `<div class="anonimbiri-menu-item" data-setting="${setting}">
-                        <div class="anonimbiri-menu-item-content">
-                            <svg class="anonimbiri-menu-item-icon" viewBox="0 0 24 24">${iconPath}</svg>
-                            <label>${label}</label>
-                        </div>
-                        <div class="anonimbiri-controls">${controlHTML}</div>
-                    </div>`;
+                <div class="anonimbiri-menu-item-content">${iconSVG}<label>${label}</label></div>
+                <div class="anonimbiri-controls">${controlHTML}</div>
+            </div>`;
         }
+
+        bindSliderUI() {
+            this.gui.querySelectorAll('.anonimbiri-slider').forEach(slider => {
+                const setting = slider.dataset.setting;
+                const valueDisplay = this.gui.querySelector(`.anonimbiri-slider-value[data-setting="${setting}"]`);
+
+                slider.addEventListener('input', () => {
+                    const value = slider.value;
+                    this.settings[setting] = Number(value);
+                    if (valueDisplay) {
+                        valueDisplay.textContent = value <= 0 ? 'Off' : value;
+                    }
+                });
+
+                slider.addEventListener('change', () => {
+                    this.saveSettings('aimbaeshiro_settings', this.settings);
+                    if (window.SOUND) window.SOUND.play('select_0', 0.1);
+                });
+            });
+        }
+
 
         createMenuButton(){this.waitFor(()=>document.getElementById('menuItemContainer')).then(t=>{t&&!document.getElementById('shiro-menu-button')&&(t=>{const e=document.createElement('div');e.id='shiro-menu-button',e.className='menuItem',e.addEventListener('click',()=>{window.SOUND&&window.SOUND.play('select_0',.1),this.toggleMenuVisibility()}),t.prepend(e)})(t)})}
 
@@ -688,24 +717,21 @@ window[cheatInstanceId] = function() {
             this.gui.addEventListener('click', (e) => {
                 const menuItem = e.target.closest('.anonimbiri-menu-item');
                 if (!menuItem) return;
-                if (window.SOUND) window.SOUND.play('select_0', 0.1);
                 const setting = menuItem.dataset.setting;
-                if (!setting) return;
-                if (menuItem.querySelector('.anonimbiri-toggle-switch')) { this.settings[setting] = !this.settings[setting]; this.saveSettings('aimbaeshiro_settings', this.settings); this.updateGUIToggle(setting);
-                                                                         } else if (menuItem.querySelector('.anonimbiri-color-picker-input')) { menuItem.querySelector('.anonimbiri-color-picker-input').click();
-                                                                                                                                              } else if (menuItem.querySelector('.anonimbiri-hotkey')) { this.showHotkeyModal(setting); }
-            });
+                if (!setting || menuItem.querySelector('.anonimbiri-slider-container')) return; // Ignore clicks on slider items
 
-            this.gui.addEventListener('input', (e) => {
-                if (e.target.classList.contains('anonimbiri-slider')) {
-                    const setting = e.target.dataset.setting;
-                    const value = parseInt(e.target.value, 10);
-                    this.settings[setting] = value;
+                if (window.SOUND) window.SOUND.play('select_0', 0.1);
+
+                if (menuItem.querySelector('.anonimbiri-toggle-switch')) {
+                    this.settings[setting] = !this.settings[setting];
                     this.saveSettings('aimbaeshiro_settings', this.settings);
-                    this.updateGUISlider(setting);
+                    this.updateGUIToggle(setting);
+                } else if (menuItem.querySelector('.anonimbiri-color-picker-input')) {
+                     menuItem.querySelector('.anonimbiri-color-picker-input').click();
+                } else if (menuItem.querySelector('.anonimbiri-hotkey')) {
+                    this.showHotkeyModal(setting);
                 }
             });
-
             this.gui.querySelectorAll('.anonimbiri-menu-item, .anonimbiri-tab, .anonimbiri-close-btn').forEach(el => { el.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); }); });
             this.gui.querySelectorAll('.anonimbiri-color-picker-input').forEach(cp => cp.addEventListener('input', (e) => { this.settings[e.target.dataset.setting] = e.target.value; this.saveSettings('aimbaeshiro_settings', this.settings); this.updateGUIPicker(e.target.dataset.setting); }));
         }
@@ -716,8 +742,6 @@ window[cheatInstanceId] = function() {
                     this.updateGUIPicker(s);
                 } else if (typeof this.settings[s] === 'boolean') {
                     this.updateGUIToggle(s);
-                } else if (s === 'fovSize') {
-                    this.updateGUISlider(s);
                 }
             });
             Object.keys(this.hotkeys).forEach(h => this.updateHotkeyButton(h));
@@ -731,17 +755,6 @@ window[cheatInstanceId] = function() {
             if (!settingName.toLowerCase().includes('color')) return; const picker = this.gui.querySelector(`input[type="color"][data-setting="${settingName}"]`); const preview = this.gui.querySelector(`.anonimbiri-color-preview[data-setting="${settingName}"]`); if (picker) picker.value = this.settings[settingName]; if (preview) preview.style.backgroundColor = this.settings[settingName];
         }
 
-        // NEW: Function to update slider UI
-        updateGUISlider(settingName) {
-            const slider = this.gui.querySelector(`.anonimbiri-slider[data-setting="${settingName}"]`);
-            const valueDisplay = this.gui.querySelector(`.anonimbiri-slider-value[data-setting="${settingName}"]`);
-            if (slider && valueDisplay) {
-                const value = this.settings[settingName];
-                slider.value = value;
-                valueDisplay.textContent = value <= 0 ? 'Off' : value;
-            }
-        }
-
         updateHotkeyButton(settingName) { const b = this.gui.querySelector(`.anonimbiri-hotkey[data-hotkey="${settingName}"]`); if (b) b.textContent = this.hotkeys[settingName]?.replace('Key', '').replace('Digit', '') || 'N/A'; }
 
         toggleMenuVisibility() {
@@ -750,14 +763,18 @@ window[cheatInstanceId] = function() {
         }
 
         showHotkeyModal(settingName) {
-            this.isBindingHotkey = true; this.currentBindingSetting = settingName; const labelEl = this.gui.querySelector(`.anonimbiri-menu-item[data-setting="${settingName}"] label`); document.getElementById('anonimbiri-hotkeyFeatureName').textContent = labelEl ? labelEl.textContent : settingName; this.hotkeyModal.classList.add('active');
+            if (!this.hotkeyModal) return;
+            this.isBindingHotkey = true; this.currentBindingSetting = settingName; const labelEl = this.gui.querySelector(`.anonimbiri-menu-item[data-setting="${settingName}"] label`);
+            const featureNameEl = document.getElementById('anonimbiri-hotkeyFeatureName');
+            if (featureNameEl) featureNameEl.textContent = labelEl ? labelEl.textContent : settingName;
+            this.hotkeyModal.classList.add('active');
         }
 
-        hideHotkeyModal() { this.isBindingHotkey = false; this.currentBindingSetting = null; this.hotkeyModal.classList.remove('active'); }
+        hideHotkeyModal() { if (!this.hotkeyModal) return; this.isBindingHotkey = false; this.currentBindingSetting = null; this.hotkeyModal.classList.remove('active'); }
 
         makeMenuDraggable() {
             const header = document.getElementById("anonimbiri-menuHeader"); let isDragging = !1, offsetX, offsetY;
-            const startDragging = e => { isDragging = !0; const t = this.gui.getBoundingClientRect(), o = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX, i = e.type.startsWith("touch") ? e.touches[0].clientY : e.clientY; offsetX = o - t.left, offsetY = i - t.top, document.addEventListener("mousemove", updatePosition), document.addEventListener("mouseup", stopDragging), document.addEventListener("touchmove", updatePosition, { passive: !1 }), document.addEventListener("touchend", stopDragging) }, updatePosition = e => { if (!isDragging) return; const t = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX, o = e.type.startsWith("touch") ? e.touches[0].clientY : e.clientY; let i = t - offsetX, n = o - offsetY; const s = 5, a = this.gui.offsetWidth, r = this.gui.offsetHeight; i = Math.max(s, Math.min(i, window.innerWidth - a - s)), n = Math.max(s, Math.min(n, window.innerHeight - r - s)), this.gui.style.left = `${i}px`, this.gui.style.top = `${n}px` }, stopDragging = () => { isDragging = !1, document.removeEventListener("mousemove", updatePosition), document.removeEventListener("mouseup", stopDragging), document.removeEventListener("touchmove", updatePosition), document.removeEventListener("touchend", stopDragging); const e = this.gui.getBoundingClientRect(); this.settings.menuLeftPx = e.left, this.settings.menuTopPx = e.top, this.saveSettings("aimbaeshiro_settings", this.settings) };
+            const startDragging = e => { isDragging = !0; const t = this.gui.getBoundingClientRect(), o = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX, i = e.type.startsWith("touch") ? e.touches[0].clientY : e.clientY; offsetX = o - t.left, offsetY = i - t.top, document.addEventListener("mousemove", updatePosition), document.addEventListener("mouseup", stopDragging), document.addEventListener("touchmove", updatePosition, { passive: !1 }), document.addEventListener("touchend", stopDragging) }, updatePosition = e => { if (!isDragging) return; e.preventDefault(); const t = e.type.startsWith("touch") ? e.touches[0].clientX : e.clientX, o = e.type.startsWith("touch") ? e.touches[0].clientY : e.clientY; let i = t - offsetX, n = o - offsetY; const s = 5, a = this.gui.offsetWidth, r = this.gui.offsetHeight; i = Math.max(s, Math.min(i, window.innerWidth - a - s)), n = Math.max(s, Math.min(n, window.innerHeight - r - s)), this.gui.style.left = `${i}px`, this.gui.style.top = `${n}px` }, stopDragging = () => { isDragging = !1, document.removeEventListener("mousemove", updatePosition), document.removeEventListener("mouseup", stopDragging), document.removeEventListener("touchmove", updatePosition), document.removeEventListener("touchend", stopDragging); const e = this.gui.getBoundingClientRect(); this.settings.menuLeftPx = e.left, this.settings.menuTopPx = e.top, this.saveSettings("aimbaeshiro_settings", this.settings) };
             header.addEventListener("mousedown", startDragging), header.addEventListener("touchstart", startDragging, { passive: !1 });
         }
 
