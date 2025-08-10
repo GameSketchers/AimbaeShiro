@@ -182,7 +182,7 @@ window[cheatInstanceId] = function() {
                     set(skinsArray) {
                         this[originalSkinsSymbol] = skinsArray;
                         if (!this[localSkinsSymbol]) {
-                            this[localSkinsSymbol] = Array.from({ length: 25000 }, (_, i) => ({ ind: i, cnt: 1, }));
+                            this[localSkinsSymbol] = Array.apply(null, Array(5e3)).map((_, i) => { return { ind: i, cnt: 0x1, }});
                         }
                         return skinsArray;
                     },
@@ -196,41 +196,54 @@ window[cheatInstanceId] = function() {
                         this['_events'] = eventEmitter;
                         if (this.ahNum === 0) {
                             cheatInstance.socket = this;
+                            cheatInstance.wsEvent = this._dispatchEvent.bind(this);
                             cheatInstance.wsSend = this.send.bind(this);
                             this.send = new Proxy(this.send, {
-                                apply(target, thisArg, [type, data]) {
-                                    if (type === 'en') {
+                                apply(target, thisArg, [type, ...message]) {
+                                    if (type=="ah2") return;
+                                    let data = message[0];
+                                    if (type === 'en' && data) {
                                         cheatInstance.skins = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17] };
                                     }
-                                    return Reflect.apply(...arguments);
+                                    if(type === 'spry' && data){
+                                        console.log(data);
+                                        cheatInstance.spray = data;
+                                        message[0] = 4577; // gerçek bir free skin gönder ki başkaları anlamasın hile olduğunu
+                                    }
+                                    return target.apply(thisArg, [type, ...message]);
                                 }
                             });
 
-                            this['_dispatchEvent'] = new Proxy(this['_dispatchEvent'], {
-                                apply(target, thisArg, [eventName, eventData]) {
+                            this._dispatchEvent = new Proxy(this._dispatchEvent, {
+                                apply(target, thisArg, [eventName, ...eventData]) {
                                     if (cheatInstance.settings.unlockSkins && eventName === '0') {
-                                        let playerData = eventData[0];
+                                        let playerData = eventData[0][0];
                                         let playerStride = 38;
-
-                                        while (playerData.length % playerStride !== 0) {
-                                            playerStride++;
-                                        }
-
+                                        while (playerData.length % playerStride !== 0) playerStride++;
                                         for (let i = 0; i < playerData.length; i += playerStride) {
-                                            playerData[i + 12] = [cheatInstance.skins.main, cheatInstance.skins.secondary];
-                                            playerData[i + 13] = cheatInstance.skins.hat;
-                                            playerData[i + 14] = cheatInstance.skins.body;
-                                            playerData[i + 19] = cheatInstance.skins.knife;
-                                            playerData[i + 24] = cheatInstance.skins.dye;
-                                            playerData[i + 33] = cheatInstance.skins.waist;
+                                            if (playerData[i] === cheatInstance.socket.socketId || 0) {
+                                                playerData[i + 12] = [cheatInstance.skins.main, cheatInstance.skins.secondary];
+                                                playerData[i + 13] = cheatInstance.skins.hat;
+                                                playerData[i + 14] = cheatInstance.skins.body;
+                                                playerData[i + 19] = cheatInstance.skins.knife;
+                                                playerData[i + 24] = cheatInstance.skins.dye;
+                                                playerData[i + 33] = cheatInstance.skins.waist;
+                                            }
                                         }
                                     }
-                                    return Reflect.apply(...arguments);
+                                    if (cheatInstance.settings.unlockSkins && eventName === 'sp') {
+                                        eventData[0][1] = cheatInstance.spray;
+                                    }
+                                    return target.apply(thisArg, [eventName, ...eventData]);
                                 }
                             });
                         }
                     },
                     get() { return this['_events']; },
+                },
+                premiumT: {
+                    set(value) { return value; },
+                    get() { return cheatInstance.settings.unlockSkins; }
                 },
                 idleTimer: {
                     enumerable: false,
@@ -299,7 +312,7 @@ window[cheatInstanceId] = function() {
         }
 
         onProcessInputs(inputPacket, player) {
-            const gameInputIndices = { frame: 0, slowMotion: 1, pitch: 2, yaw: 3, moveDir: 4, shoot: 5, scope: 6, jump: 7, reload: 8, crouch: 9, weaponMelee: 10, weaponSecondary: 11 };
+            const gameInputIndices = { frame: 0, slowMotion: 1, pitch: 2, yaw: 3, moveDir: 4, shoot: 5, scope: 6, jump: 7, reload: 8, crouch: 9, weaponMelee: 10, weaponSecondary: 11, moveLock: 12 };
 
             if (this.settings.bhopEnabled && this.pressedKeys.has('Space')) {
                 this.controls.keys[this.controls.binds.jump.val] ^= 1;
@@ -376,7 +389,7 @@ window[cheatInstanceId] = function() {
                     }
                 } else if (distance <= throwRange && this.me.weapon.canThrow) {
                     this.lookDir(compensatedPitch, yaw);
-                    
+
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
                         if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
