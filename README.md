@@ -1,69 +1,67 @@
-<h1 align="center">🌸 AimbaeShiro – Krunker.IO Cheat</h1>
+# 🌸 AimbaeShiro — Krunker.IO Cheat
 
 <p align="center">
-    <img src="./Assets/banner.jpeg" alt="AimbaeShiro Banner" style="max-width: 100%;">
+  <img src="./Assets/banner.jpeg" alt="AimbaeShiro Banner" />
 </p>
 
 <p align="center">
-    <img src="https://img.shields.io/badge/License-MIT-ff66cc?style=for-the-badge&logo=book&logoColor=white" alt="License">
-    <img src="https://img.shields.io/badge/Status-Active-success?style=for-the-badge&logo=codeforces&logoColor=white" alt="Status">
-    <a href="https://greasyfork.org/en/scripts/538607-aimbaeshiro">
-        <img src="https://img.shields.io/badge/GreasyFork-Script-orange?style=for-the-badge&logo=greasyfork" alt="GreasyFork">
-    </a>
+  <img alt="Version" src="https://img.shields.io/github/v/release/GameSketchers/AimbaeShiro?label=%F0%9F%8C%B8%20Version&logo=github&color=ff99dd&logoColor=white&style=for-the-badge" />
+  <img alt="License" src="https://img.shields.io/github/license/GameSketchers/AimbaeShiro?label=%F0%9F%92%9C%20License&logo=open-source-initiative&logoColor=white&color=ff99dd&style=for-the-badge" />
+  <a href="https://greasyfork.org/en/scripts/538607-aimbaeshiro-krunker-io-cheat">
+    <img alt="GreasyFork Installs" src="https://img.shields.io/badge/%F0%9F%8C%B7%20GreasyFork%20Installs-140-ffa3d7?style=for-the-badge&logo=greasyfork&logoColor=white" />
+  </a>
 </p>
 
 ---
 
 ## 🎮 Features
 
-- ✅ **Advanced Aimbot System**
-    - **Non-Silent Aiming:** Robust and reliable aimbot that physically moves your crosshair.
-    - **Smart Targeting:** Differentiates between ranged weapons and melee weapons (including throwables).
-    - **Bullet Drop Compensation:** Automatically aims higher on long-distance shots to account for bullet drop.
-    - **Customization:** Toggle aimbot with Right Mouse, enable Team Check, and Wall Check for legit gameplay.
+- ✅ Advanced Aimbot System  
+  - Non-Silent Aiming: Physically moves your crosshair for robust, legit-style aiming.  
+  - Smart Targeting: Different logic for ranged vs melee (including throwables).  
+  - Bullet Drop Compensation: Auto high-aim on long shots.  
+  - Customization: Right Mouse trigger, Team Check, Wall Check.
 
-- 🎯 **Fully Featured ESP**
-    - **Glowing Box ESP:** Stylish animated boxes around enemies.
-    - **Energy Trail ESP:** Neon tracers pointing from the bottom of your screen to the enemy's location.
-    - **Full Info Tags:** See enemy Name, Health (with bar), and equipped Weapon.
-    - **Custom Colors:** Personalize the color of your ESP tracers and boxes.
+- 🎯 Fully Featured ESP  
+  - Glowing Box ESP with stylish animation.  
+  - Energy Trail ESP: Neon tracer from screen bottom to enemies.  
+  - Full Info Tags: Name, Health bar, Weapon.  
+  - Custom Colors for tracers and boxes.
 
-- ✨ **Visual & Utility Features**
-    - **Unlock All Skins:** Access every cosmetic in the game with a single toggle (client-side).
-    - **Wireframe Mode:** See the map in a clean wireframe view.
-    - **Anti-Kick:** Prevents being kicked for inactivity.
-    - **Auto Nuke:** Automatically calls in a nuke as soon as it's available.
+- ✨ Visual & Utility  
+  - Unlock All Skins (client-side).  
+  - Wireframe Mode.  
+  - Anti-Kick for inactivity.  
+  - Auto Nuke when available.
 
-- 🐇 **Advanced Movement**
-    - **Auto Bhop (Slide Hop):** Intelligently uses sliding to maintain and gain speed for perfect, fluid movement.
+- 🐇 Advanced Movement  
+  - Auto Bhop (Slide Hop) with smart slide usage for speed/momentum.
 
-- 🖌️ **Stylish User Interface**
-    - **Custom Anime-Themed UI:** A beautiful and intuitive menu with neon effects and smooth animations.
-    - **Unique SVG Icons:** Every setting has a custom-designed icon for easy navigation.
-    - **Main Menu Button:** Quick access to the cheat menu directly from Krunker's main screen.
+- 🖌️ Stylish UI  
+  - Custom anime-themed UI with neon effects and smooth animations.  
+  - Unique SVG icons for every setting.  
+  - Main Menu Button on Krunker’s home screen.
 
-- 💾 **Configuration**
-    - **Persistent Settings:** Your chosen settings are automatically saved and loaded.
-    - **Custom Hotkeys:** Bind almost every feature to a key of your choice.
-
----
-
-### 🖼️ In-Game Screenshot
-
-![AimbaeShiro In-game](/Assets/screenshot.png)
+- 💾 Configuration  
+  - Persistent Settings.  
+  - Custom Hotkeys for almost every feature.
 
 ---
 
-### 📥 Installation
+## 🖼️ In-Game Preview
 
-Install via **GreasyFork**:  
-👉 [AimbaeShiro on GreasyFork](https://greasyfork.org/en/scripts/538607-aimbaeshiro)
-
-Or clone/download from **GitHub**:  
-🔗 [github.com/GameSketchers/AimbaeShiro](https://github.com/GameSketchers/AimbaeShiro)
+![AimbaeShiro In-game](./Assets/screenshot.png)
 
 ---
 
-### 🧾 License
+## 🔗 Links
 
-This project is licensed under the MIT License.
+- 📦 GitHub Source: https://github.com/GameSketchers/AimbaeShiro  
+- 🧪 Releases (latest: v1.4.3 “Spray Fix”): https://github.com/GameSketchers/AimbaeShiro/releases  
+- 📄 GreasyFork Script: https://greasyfork.org/en/scripts/538607-aimbaeshiro-krunker-io-cheat
+
+---
+
+## 🧾 License
+
+MIT License © [anonimbiri_IsBack](https://greasyfork.org/en/users/1442666-anonimbiri-isback)
