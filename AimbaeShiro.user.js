@@ -11,9 +11,10 @@
 // @description:az Krunker.io Hilesi 2025: Anime Aimbot, ESP/Wallhack, Pulsuz Skinlər, Bhop Skript. İşlək və güncəl mod menyu.
 // @author       anonimbiri
 // @match        *://krunker.io/*
-// @match        *://browserfps.com/*
+// @match        *://*.browserfps.com/*
 // @exclude      *://krunker.io/social*
 // @exclude      *://krunker.io/editor*
+// @exclude      *://krunker.io/viewer*
 // @icon         https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/logo.png
 // @grant        none
 // @supportURL   https://github.com/GameSketchers/AimbaeShiro/issues/new?labels=bug&type=bug&template=bug_report.md&title=Bug+Report
