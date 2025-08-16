@@ -218,6 +218,7 @@ window[cheatInstanceId] = function() {
 
                             this._dispatchEvent = new Proxy(this._dispatchEvent, {
                                 apply(target, thisArg, [eventName, ...eventData]) {
+                                    if (eventName === 'error' && eventData[0][0].includes('Connection Banned')) localStorage.removeItem('krunker_token'), alert('Due to a ban, you have been signed out,\nPlease connect to the game with a VPN.'), console.log('🌸 AimbaeShiro: Due to a ban, you have been signed out, Please connect to the game with a VPN.');
                                     if (cheatInstance.settings.unlockSkins && eventName === '0') {
                                         let playerData = eventData[0][0];
                                         let playerStride = 38;
