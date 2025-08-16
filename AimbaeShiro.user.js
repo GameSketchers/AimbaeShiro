@@ -4,11 +4,11 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.4.5
-// @description  A powerful anime-themed cheat suite with a non-silent Aimbot, Unlock Skins, glowing & animated ESP Box, Energy Trail, Healthbars, and more. Powered by an advanced injection method.
-// @description:tr Fiziksel nişan alan Aimbot, Tüm Kozmetikleri Açma, parlak & animasyonlu ESP Kutusu, Enerji İzi, Can Barları ve daha fazlasını içeren güçlü, anime temalı bir hile aracı. Gelişmiş bir enjeksiyon yöntemiyle güçlendirilmiştir.
-// @description:ja 非サイレントエイムボット、全スキンアンロック、輝くアニメーションESPボックス、エナジートレイル、ヘルスバーなどを備えた強力なアニメ風チートスイート。高度な注入方法を搭載。
-// @description:az Fiziki nişan alan Aimbot, Bütün Kosmetikləri Açma, parlayan & animasiyalı ESP Qutusu, Enerji İzi, Can Zolaqları və daha çoxunu ehtiva edən güclü, anime tərzli bir hile vasitəsidir. Qabaqcıl bir enjeksiyon üsulu ilə gücləndirilmişdir.
+// @version      1.4.6
+// @description    Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
+// @description:tr Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
+// @description:ja Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
+// @description:az Krunker.io Hilesi 2025: Anime Aimbot, ESP/Wallhack, Pulsuz Skinlər, Bhop Skript. İşlək və güncəl mod menyu.
 // @author       anonimbiri
 // @match        *://krunker.io/*
 // @match        *://browserfps.com/*
@@ -870,7 +870,7 @@ window[cheatInstanceId] = function() {
 let tokenPromiseResolve;
 const tokenPromise = new Promise((resolve) => (tokenPromiseResolve = resolve));
 const ifr = document.createElement('iframe');
-ifr.src = location.origin + '/';
+ifr.src = location.origin + '/' + (window.location.search ? window.location.search : '');
 ifr.style.display = 'none';
 document.documentElement.append(ifr);
 const ifrFetch = ifr.contentWindow.fetch;
