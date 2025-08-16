@@ -46,6 +46,7 @@ window[cheatInstanceId] = function() {
             this.skins = null;
             this.scale = 1;
             this.three = null;
+            this.notifyContainer = null; // Container for notifications
 
             this.PLAYER_HEIGHT = 11;
             this.PLAYER_WIDTH = 4;
@@ -105,12 +106,15 @@ window[cheatInstanceId] = function() {
 
             try {
                 this.loadSettings();
+                this.initializeNotifierContainer();
+                this.checkForUpdates();
                 this.initializeGameHooks();
                 this.createGUI();
                 this.createMenuButton();
                 this.addEventListeners();
                 console.log("🌸 AimbaeShiro: Successfully Initialized!");
-            } catch (error) {
+            } catch (error)
+            {
                 console.error('🌸 AimbaeShiro: FATAL ERROR during initialization.', error);
             }
         }
@@ -133,6 +137,135 @@ window[cheatInstanceId] = function() {
             } catch (e) {
                 console.error("🌸 AimbaeShiro: Could not save settings.", e);
             }
+        }
+
+        async checkForUpdates() {
+            const current = GM_info.script.version || '0.0.0';
+
+            const getLatestFromGitHub = async () => {
+                try {
+                    const res = await fetch('https://api.github.com/repos/GameSketchers/AimbaeShiro/releases/latest', { cache: 'no-store' });
+                    if (!res.ok) throw new Error('GitHub latest failed');
+                    const json = await res.json();
+                    const latestTag = (json && (json.tag_name || json.name)) ? (json.tag_name || '').toString().trim() : '';
+                    const assetUrl = (json.assets && json.assets[0] && json.assets[0].browser_download_url) ? json.assets[0].browser_download_url : null;
+                    const version = latestTag.replace(/^v/i, '').trim();
+                    return { version, downloadUrl: assetUrl, source: 'github' };
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            const getLatestFromGreasyFork = async () => {
+                try {
+                    const res = await fetch('https://api.greasyfork.org/en/scripts/538607.json', { cache: 'no-store' });
+                    if (!res.ok) throw new Error('GF latest failed');
+                    const json = await res.json();
+                    const version = (json && json.version) ? json.version : null;
+                    const code_url = (json && json.code_url) ? json.code_url : null;
+                    return { version, downloadUrl: code_url, source: 'greasyfork' };
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            const latestGh = await getLatestFromGitHub();
+            const latest = latestGh || await getLatestFromGreasyFork();
+
+            if (!latest || !latest.version) return;
+
+            const cmp = this.compareVersionStrings(current, latest.version);
+            if (cmp < 0) {
+                const url = latest.downloadUrl || 'https://greasyfork.org/en/scripts/538607-aimbaeshiro-krunker-io-cheat';
+                this.notify({ // Updated call
+                    title: 'New version available',
+                    message: `Current: ${current} → Latest: ${latest.version}`,
+                    actionText: 'Update',
+                    onAction: () => {
+                        try { window.open(url, '_blank', 'noopener'); } catch (e) { location.href = url; }
+                    },
+                    timeout: 0
+                });
+            }
+        }
+
+        compareVersionStrings(a, b) {
+            const na = String(a || '').replace(/^v/i, '').split('.').map(x => parseInt(x, 10) || 0);
+            const nb = String(b || '').replace(/^v/i, '').split('.').map(x => parseInt(x, 10) || 0);
+            const len = Math.max(na.length, nb.length);
+            for (let i = 0; i < len; i++) {
+                const da = na[i] || 0, db = nb[i] || 0;
+                if (da > db) return 1;
+                if (da < db) return -1;
+            }
+            return 0;
+        }
+
+        initializeNotifierContainer() {
+            let container = document.getElementById('anonimbiri-notify-wrap');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'anonimbiri-notify-wrap';
+                document.documentElement.appendChild(container);
+            }
+            this.notifyContainer = container;
+        }
+
+        notify({ title = 'Notification', message = '', actionText, onAction, timeout = 6000 } = {}) {
+            if (!this.notifyContainer) {
+                console.error("🌸 AimbaeShiro: Notifier container not initialized.");
+                return;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'anonimbiri-notify-card';
+
+            setTimeout(() => card.classList.add('visible'), 10);
+
+            const content = document.createElement('div');
+            content.className = 'anonimbiri-notify-content';
+
+            const logo = document.createElement('div');
+            logo.className = 'anonimbiri-notify-logo';
+
+            const texts = document.createElement('div');
+            texts.className = 'anonimbiri-notify-texts';
+
+            const titleEl = document.createElement('label');
+            titleEl.className = 'anonimbiri-notify-title';
+            titleEl.textContent = title;
+
+            const messageEl = document.createElement('div');
+            messageEl.className = 'anonimbiri-notify-message';
+            messageEl.textContent = message;
+
+            texts.append(titleEl, messageEl);
+            content.append(logo, texts);
+
+            const controls = document.createElement('div');
+            controls.className = 'anonimbiri-notify-controls';
+
+            if (actionText && typeof onAction === 'function') {
+                const btn = document.createElement('div');
+                btn.className = 'anonimbiri-notify-action-btn';
+                btn.textContent = actionText;
+                btn.addEventListener('click', (e) => { e.stopPropagation(); onAction(); dismiss(); });
+                controls.appendChild(btn);
+            }
+
+            card.append(content, controls);
+            this.notifyContainer.appendChild(card);
+
+            let hideTimer;
+            if (timeout > 0) hideTimer = setTimeout(dismiss, timeout);
+
+            function dismiss() {
+                clearTimeout(hideTimer);
+                card.classList.remove('visible');
+                setTimeout(() => card.remove(), 350);
+            }
+
+            return { dismiss };
         }
 
         initializeGameHooks() {
@@ -218,7 +351,15 @@ window[cheatInstanceId] = function() {
 
                             this._dispatchEvent = new Proxy(this._dispatchEvent, {
                                 apply(target, thisArg, [eventName, ...eventData]) {
-                                    if (eventName === 'error' && eventData[0][0].includes('Connection Banned')) localStorage.removeItem('krunker_token'), alert('Due to a ban, you have been signed out,\nPlease connect to the game with a VPN.'), console.log('🌸 AimbaeShiro: Due to a ban, you have been signed out, Please connect to the game with a VPN.');
+                                    if (eventName === 'error' && eventData[0][0].includes('Connection Banned')) {
+                                        localStorage.removeItem('krunker_token');
+                                        cheatInstance.notify({ // Updated call
+                                            title: 'Banned',
+                                            message: 'Due to a ban, you have been signed out.\nPlease connect to the game with a VPN.',
+                                            timeout: 5000
+                                        });
+                                        console.log('🌸 AimbaeShiro: Due to a ban, you have been signed out, Please connect to the game with a VPN.');
+                                    }
                                     if (cheatInstance.settings.unlockSkins && eventName === '0') {
                                         let playerData = eventData[0][0];
                                         let playerStride = 38;
@@ -504,7 +645,20 @@ window[cheatInstanceId] = function() {
             .anonimbiri-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid #ff0080;box-shadow:0 0 12px rgba(255,0,128,.6);cursor:pointer}
             .anonimbiri-slider::-moz-range-track{height:6px;background:linear-gradient(90deg,rgba(255,0,128,.35),rgba(255,77,166,.35));border:1px solid rgba(255,0,128,.35);border-radius:999px}
             .anonimbiri-slider-value{color:#fff;font-weight:800;letter-spacing:.5px;font-size:12px;min-width:40px;text-align:center;background:rgba(255,0,128,.18);border:1px solid rgba(255,0,128,.45);border-radius:6px;padding:3px 8px;box-shadow:inset 0 0 8px rgba(255,0,128,.35)}
-            .anonimbiri-menu-item:hover .anonimbiri-slider-value{background:#ff0080}`;
+            .anonimbiri-menu-item:hover .anonimbiri-slider-value{background:#ff0080}
+            /* Notifier Styles */
+            #anonimbiri-notify-wrap{position:fixed;top:16px;right:16px;z-index:20000;display:flex;flex-direction:column;gap:10px}
+            .anonimbiri-notify-card{font-family:'Orbitron',monospace;display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:rgba(30,30,30,.9);border:1px solid rgba(255,0,128,.6);border-radius:8px;backdrop-filter:blur(6px);width:min(92vw,360px);cursor:default;transform:translateX(calc(100% + 20px));opacity:0;transition:transform .35s ease,opacity .35s ease,box-shadow .3s ease}
+            .anonimbiri-notify-card.visible{transform:translateX(0);opacity:1;box-shadow:0 10px 25px rgba(255,0,128,.3)}
+            .anonimbiri-notify-content{display:flex;align-items:center;gap:12px;min-width:0}
+            .anonimbiri-notify-logo{width:40px;height:40px;flex:0 0 40px;background-image:url('https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/logo.png');background-size:cover;background-position:center}
+            .anonimbiri-notify-texts{display:flex;flex-direction:column;gap:4px;min-width:0}
+            .anonimbiri-notify-title{color:#fff;font-weight:800;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+            .anonimbiri-notify-message{color:#ddd;font-size:10px;line-height:1.5;white-space:normal;word-break:break-word}
+            .anonimbiri-notify-controls{display:flex;align-items:center;gap:8px;padding-left:5px}
+            .anonimbiri-notify-action-btn{background:rgba(255,0,128,.2);color:#fff;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;border:1px solid #ff0080;min-width:40px;text-align:center;cursor:pointer;transition:all .2s ease}
+            .anonimbiri-notify-action-btn:hover{background:#ff0080;transform:scale(1.05)}
+            `;
 
             const style = document.createElement('style');
             style.textContent = menuCSS;
