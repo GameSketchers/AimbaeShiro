@@ -181,7 +181,7 @@ window[cheatInstanceId] = function() {
             const cmp = this.compareVersionStrings(current, latest.version);
             if (cmp < 0) {
                 const url = latest.downloadUrl || 'https://greasyfork.org/en/scripts/538607-aimbaeshiro-krunker-io-cheat';
-                this.notify({ // Updated call
+                this.notify({
                     title: 'New version available',
                     message: `Current: ${current} → Latest: ${latest.version}`,
                     actionText: 'Update',
@@ -309,7 +309,6 @@ window[cheatInstanceId] = function() {
                     set(value) {
                         if(cheatInstance.three == null){
                             console.log("🌸 AimbaeShiro: THREE object captured!");
-                            console.log(cheatInstance);
                             cheatInstance.three = value;
                             cheatInstance.tempVector = new value.Vector3();
                             cheatInstance.cameraPos = new value.Vector3();
