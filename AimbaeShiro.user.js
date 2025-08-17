@@ -47,11 +47,12 @@ window[cheatInstanceId] = function() {
             this.skins = null;
             this.scale = 1;
             this.three = null;
-            this.notifyContainer = null; // Container for notifications
+            this.notifyContainer = null;
 
             this.PLAYER_HEIGHT = 11;
             this.PLAYER_WIDTH = 4;
             this.CROUCH_FACTOR = 3;
+            this.CAMERA_HEIGHT = 1.5;
 
             this.tempVector = null;
             this.cameraPos = null;
@@ -66,6 +67,7 @@ window[cheatInstanceId] = function() {
                 aimbotEnabled: true,
                 aimbotOnRightMouse: false,
                 aimbotWallCheck: true,
+                aimbotWallBangs: false,
                 aimbotTeamCheck: true,
                 autoFireEnabled: false,
                 fovSize: 90,
@@ -96,6 +98,7 @@ window[cheatInstanceId] = function() {
                 bhopEnabled: 'F8',
                 autoFireEnabled: 'F9',
                 aimbotWallCheck: 'F10',
+                aimbotWallBangs: 'Insert',
                 aimbotTeamCheck: 'F11',
                 espTeamCheck: 'F12',
                 espNameTags: 'Numpad1',
@@ -306,6 +309,7 @@ window[cheatInstanceId] = function() {
                     set(value) {
                         if(cheatInstance.three == null){
                             console.log("🌸 AimbaeShiro: THREE object captured!");
+                            console.log(cheatInstance);
                             cheatInstance.three = value;
                             cheatInstance.tempVector = new value.Vector3();
                             cheatInstance.cameraPos = new value.Vector3();
@@ -354,7 +358,7 @@ window[cheatInstanceId] = function() {
                                 apply(target, thisArg, [eventName, ...eventData]) {
                                     if (eventName === 'error' && eventData[0][0].includes('Connection Banned')) {
                                         localStorage.removeItem('krunker_token');
-                                        cheatInstance.notify({ // Updated call
+                                        cheatInstance.notify({
                                             title: 'Banned',
                                             message: 'Due to a ban, you have been signed out.\nPlease connect to the game with a VPN.',
                                             timeout: 5000
@@ -438,7 +442,7 @@ window[cheatInstanceId] = function() {
 
             if (this.renderer.scene) {
                 this.renderer.scene.traverse(child => {
-                    if (child.material) {
+                    if (child.material && child.type == 'Mesh' && child.name != '' && child.isObject3D && !child.isModel && child.isMesh){
                         if (Array.isArray(child.material)) {
                             for (const material of child.material) material.wireframe = this.settings.wireframeEnabled;
                         } else child.material.wireframe = this.settings.wireframeEnabled;
@@ -500,8 +504,8 @@ window[cheatInstanceId] = function() {
             let target = null;
             if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
                 let potentialTargets = this.game.players.list
-                    .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || p.inView))
-                    .sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
+                .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || this.getCanSee(p)))
+                .sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
 
                 if (this.settings.fovSize > 0) {
                     const fovRadius = this.settings.fovSize;
@@ -647,7 +651,6 @@ window[cheatInstanceId] = function() {
             .anonimbiri-slider::-moz-range-track{height:6px;background:linear-gradient(90deg,rgba(255,0,128,.35),rgba(255,77,166,.35));border:1px solid rgba(255,0,128,.35);border-radius:999px}
             .anonimbiri-slider-value{color:#fff;font-weight:800;letter-spacing:.5px;font-size:12px;min-width:40px;text-align:center;background:rgba(255,0,128,.18);border:1px solid rgba(255,0,128,.45);border-radius:6px;padding:3px 8px;box-shadow:inset 0 0 8px rgba(255,0,128,.35)}
             .anonimbiri-menu-item:hover .anonimbiri-slider-value{background:#ff0080}
-            /* Notifier Styles */
             #anonimbiri-notify-wrap{position:fixed;top:16px;right:16px;z-index:20000;display:flex;flex-direction:column;gap:10px}
             .anonimbiri-notify-card{font-family:'Orbitron',monospace;display:flex;justify-content:space-between;align-items:center;padding:10px 15px;background:rgba(30,30,30,.9);border:1px solid rgba(255,0,128,.6);border-radius:8px;backdrop-filter:blur(6px);width:min(92vw,360px);cursor:default;transform:translateX(calc(100% + 20px));opacity:0;transition:transform .35s ease,opacity .35s ease,box-shadow .3s ease}
             .anonimbiri-notify-card.visible{transform:translateX(0);opacity:1;box-shadow:0 10px 25px rgba(255,0,128,.3)}
@@ -661,32 +664,34 @@ window[cheatInstanceId] = function() {
             .anonimbiri-notify-action-btn:hover{background:#ff0080;transform:scale(1.05)}
             `;
 
-            const style = document.createElement('style');
-            style.textContent = menuCSS;
-            document.head.appendChild(style);
+                const style = document.createElement('style');
+                style.textContent = menuCSS;
+                document.head.appendChild(style);
 
-            const neonIcons = {
-                aimbot: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
-                rightMouse: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 6v4"/>',
-                wallCheck: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16M8 6v12M16 6v12"/>',
-                teamCheck: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
-                autoFire: '<path d="M13 3L6 12h4l-2 9 8-12h-4l1-6z"/>',
-                espLines: '<circle cx="12" cy="12" r="9"/><path d="M12 12l6-6M12 12h9M12 12v9"/>',
-                espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
-                nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
-                weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
-                colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
-                wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
-                unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
-                bunnyHop: '<path d="M6 16l6-6 6 6"/><path d="M6 10h12"/>',
-                autoNuke: '<circle cx="12" cy="12" r="2"/><path d="M12 4v4l-3 2"/><path d="M20 12h-4l-2-3"/><path d="M12 20v-4l3-2"/>',
-                antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
-                autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
-                hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
-                fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>'
-            };
+                const neonIcons = {
+                    aimbot: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+                    rightMouse: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 6v4"/>',
+                    wallCheck: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16M8 6v12M16 6v12"/>',
+                    wallbangs: '<rect x="2" y="2" width="2" height="20" rx="1"/><path d="M4 2l10 3v16L4 18V2z"/><circle cx="12" cy="12" r="1"/><path d="M16 12h6m-3-2l2 2-2 2"/>',
+                    wallbangsWireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18"/><path d="M20 7l-8 4-8-4"/><path d="M4 11l8 4 8-4"/>',
+                    teamCheck: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
+                    autoFire: '<path d="M13 3L6 12h4l-2 9 8-12h-4l1-6z"/>',
+                    espLines: '<circle cx="12" cy="12" r="9"/><path d="M12 12l6-6M12 12h9M12 12v9"/>',
+                    espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
+                    nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
+                    weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
+                    colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
+                    wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
+                    unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
+                    bunnyHop: '<path d="M6 16l6-6 6 6"/><path d="M6 10h12"/>',
+                    autoNuke: '<circle cx="12" cy="12" r="2"/><path d="M12 4v4l-3 2"/><path d="M20 12h-4l-2-3"/><path d="M12 20v-4l3-2"/>',
+                    antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
+                    autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
+                    hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
+                    fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>'
+                };
 
-            const menuHTML = `
+                const menuHTML = `
             <div class="anonimbiri-menu-container" id="anonimbiri-cheatMenu">
                 <div class="anonimbiri-menu-header" id="anonimbiri-menuHeader">
                 <div class="anonimbiri-close-btn" id="anonimbiri-closeBtn">
@@ -706,6 +711,7 @@ window[cheatInstanceId] = function() {
                     ${this.createMenuItemHTML('toggle','aimbotEnabled','Aimbot Enabled', neonIcons.aimbot)}
                     ${this.createMenuItemHTML('toggle','aimbotOnRightMouse','Right Mouse Trigger', neonIcons.rightMouse)}
                     ${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check', neonIcons.wallCheck)}
+                    ${this.createMenuItemHTML('toggle','aimbotWallBangs','WallBangs', neonIcons.wallbangs)}
                     ${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check', neonIcons.teamCheck)}
                     ${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire', neonIcons.autoFire)}
                     ${this.createMenuItemHTML('slider','fovSize','FOV Size', neonIcons.fov)}
@@ -735,6 +741,7 @@ window[cheatInstanceId] = function() {
                     ${this.createMenuItemHTML('hotkey','toggleMenu','Toggle Menu', neonIcons.hotkeys)}
                     ${this.createMenuItemHTML('hotkey','aimbotEnabled','Toggle Aimbot', neonIcons.aimbot)}
                     ${this.createMenuItemHTML('hotkey','aimbotWallCheck','Toggle Wall Check', neonIcons.wallCheck)}
+                    ${this.createMenuItemHTML('hotkey','aimbotWallBangs','Toggle WallBangs', neonIcons.wallbangs)}
                     ${this.createMenuItemHTML('hotkey','aimbotTeamCheck','Toggle Aimbot Team', neonIcons.teamCheck)}
                     ${this.createMenuItemHTML('hotkey','espTeamCheck','Toggle ESP Team', neonIcons.teamCheck)}
                     ${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info', neonIcons.nameTags)}
@@ -749,7 +756,7 @@ window[cheatInstanceId] = function() {
                 </div>
             </div>`;
 
-            const hotkeyModalHTML = `
+                const hotkeyModalHTML = `
             <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
                 <div class="anonimbiri-hotkey-content">
                     <h2>Assign Hotkey</h2>
@@ -758,34 +765,34 @@ window[cheatInstanceId] = function() {
                 </div>
             </div>`;
 
-            const container = document.createElement('div');
-            container.innerHTML = menuHTML + hotkeyModalHTML;
-            document.body.appendChild(container);
+                const container = document.createElement('div');
+                container.innerHTML = menuHTML + hotkeyModalHTML;
+                document.body.appendChild(container);
 
-            this.gui = document.getElementById('anonimbiri-cheatMenu');
-            this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
+                this.gui = document.getElementById('anonimbiri-cheatMenu');
+                this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-            if (this.settings.menuLeftPx !== null && this.settings.menuTopPx !== null) {
-                this.gui.style.left = `${this.settings.menuLeftPx}px`;
-                this.gui.style.top = `${this.settings.menuTopPx}px`;
-            } else {
-                setTimeout(() => {
-                const t = this.gui.getBoundingClientRect();
-                this.gui.style.left = `calc(50% - ${t.width / 2}px)`;
-                this.gui.style.top = `calc(50% - ${t.height / 2}px)`;
-                const e = this.gui.getBoundingClientRect();
-                this.settings.menuLeftPx = e.left;
-                this.settings.menuTopPx = e.top;
-                this.saveSettings('aimbaeshiro_settings', this.settings);
-                }, 100);
+                if (this.settings.menuLeftPx !== null && this.settings.menuTopPx !== null) {
+                    this.gui.style.left = `${this.settings.menuLeftPx}px`;
+                    this.gui.style.top = `${this.settings.menuTopPx}px`;
+                } else {
+                    setTimeout(() => {
+                        const t = this.gui.getBoundingClientRect();
+                        this.gui.style.left = `calc(50% - ${t.width / 2}px)`;
+                        this.gui.style.top = `calc(50% - ${t.height / 2}px)`;
+                        const e = this.gui.getBoundingClientRect();
+                        this.settings.menuLeftPx = e.left;
+                        this.settings.menuTopPx = e.top;
+                        this.saveSettings('aimbaeshiro_settings', this.settings);
+                    }, 100);
+                }
+
+                if (this.settings.menuVisible) this.gui.classList.add('visible');
+
+                this.updateAllGUIElements();
+                this.makeMenuDraggable();
+                this.bindSliderUI();
             }
-
-            if (this.settings.menuVisible) this.gui.classList.add('visible');
-
-            this.updateAllGUIElements();
-            this.makeMenuDraggable();
-            this.bindSliderUI();
-        }
 
         createMenuItemHTML(type, setting, label, iconPath) {
             let controlHTML = '';
@@ -799,23 +806,23 @@ window[cheatInstanceId] = function() {
                         <input type="color" class="anonimbiri-color-picker-input" data-setting="${setting}">
                         <div class="anonimbiri-color-preview" data-setting="${setting}"></div>
                     </div>`;
-                    break;
-                case 'hotkey':
-                    controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}"></div>`;
-                    break;
-                case 'slider':
-                    const val = (this.settings && typeof this.settings[setting] !== 'undefined') ? this.settings[setting] : 0;
-                    controlHTML = `<div class="anonimbiri-slider-container" data-setting="${setting}">
+                        break;
+                    case 'hotkey':
+                        controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}"></div>`;
+                        break;
+                    case 'slider':
+                        const val = (this.settings && typeof this.settings[setting] !== 'undefined') ? this.settings[setting] : 0;
+                        controlHTML = `<div class="anonimbiri-slider-container" data-setting="${setting}">
                         <input type="range" class="anonimbiri-slider" data-setting="${setting}" min="0" max="300" step="1" value="${val}">
                         <div class="anonimbiri-slider-value" data-setting="${setting}">${val <= 0 ? 'Off' : val}</div>
                     </div>`;
-                    break;
-            }
-            return `<div class="anonimbiri-menu-item" data-setting="${setting}">
+                        break;
+                }
+                return `<div class="anonimbiri-menu-item" data-setting="${setting}">
                 <div class="anonimbiri-menu-item-content">${iconSVG}<label>${label}</label></div>
                 <div class="anonimbiri-controls">${controlHTML}</div>
             </div>`;
-        }
+            }
 
         bindSliderUI() {
             this.gui.querySelectorAll('.anonimbiri-slider').forEach(slider => {
@@ -883,7 +890,7 @@ window[cheatInstanceId] = function() {
                     this.saveSettings('aimbaeshiro_settings', this.settings);
                     this.updateGUIToggle(setting);
                 } else if (menuItem.querySelector('.anonimbiri-color-picker-input')) {
-                     menuItem.querySelector('.anonimbiri-color-picker-input').click();
+                    menuItem.querySelector('.anonimbiri-color-picker-input').click();
                 } else if (menuItem.querySelector('.anonimbiri-hotkey')) {
                     this.showHotkeyModal(setting);
                 }
@@ -940,7 +947,44 @@ window[cheatInstanceId] = function() {
         getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
         getXDirection(t,e,o,i,s,n){const r=s-e,a=this.getDistance({x:t,y:e,z:o},{x:i,y:s,z:n});return Math.asin(r/a)}
         getTargetPosition(t){const e=this.PLAYER_HEIGHT/6.6;return{x:t.x,y:t.y-t.crouchVal*this.CROUCH_FACTOR+e,z:t.z}}
-        isPlayerVisible(player) { if (!this.game?.map?.manager?.canSee) return true; return this.game.map.manager.canSee(this.me, player.x, player.y, player.z); }
+
+        lineInRect(lx1, lz1, ly1, dx, dz, dy, x1, z1, y1, x2, z2, y2) {
+            let t1 = (x1 - lx1) * dx;
+            let t2 = (x2 - lx1) * dx;
+            let t3 = (y1 - ly1) * dy;
+            let t4 = (y2 - ly1) * dy;
+            let t5 = (z1 - lz1) * dz;
+            let t6 = (z2 - lz1) * dz;
+            let tmin = Math.max(Math.max(Math.min(t1, t2), Math.min(t3, t4)), Math.min(t5, t6));
+            let tmax = Math.min(Math.min(Math.max(t1, t2), Math.max(t3, t4)), Math.max(t5, t6));
+            if (tmax < 0) return false;
+            if (tmin > tmax) return false;
+            return tmin;
+        }
+
+        getCanSee(player, boxSize) {
+            const from = this.me;
+            if (!from || !this.game ?.map ?.manager ?.objects) return true;
+            boxSize = boxSize || 0;
+            const toX = player.x, toY = player.y, toZ = player.z;
+
+            for (let obj, dist = this.getDistance(from, player), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(this.getDistance({x: from.x, y: 0, z: from.z}, {x: toX, y: 0, z: toZ}), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
+                if (!(obj = this.game.map.manager.objects[i]).noShoot && obj.active && !obj.transparent && (!this.settings.aimbotWallBangs || (!obj.penetrable || !this.me.weapon.pierce))) {
+                    let tmpDst = this.lineInRect(from.x, from.z, yOffset, dx, dz, dy, obj.x - Math.max(0, obj.width - boxSize), obj.z - Math.max(0, obj.length - boxSize), obj.y - Math.max(0, obj.height - boxSize), obj.x + Math.max(0, obj.width - boxSize), obj.z + Math.max(0, obj.length - boxSize), obj.y + Math.max(0, obj.height - boxSize));
+                    if (tmpDst && 1 > tmpDst) return false;
+                }
+            }
+
+            /*
+            let terrain = this.game.map.terrain;
+            if (terrain) {
+                let terrainRaycast = terrain.raycast(from.x, -from.z, yOffset, 1 / dx, -1 / dz, 1 / dy);
+                if (terrainRaycast) return false; // a wall is found
+            }
+            */
+            return true; // no walls found
+        }
+
         async waitFor(condition, timeout = Infinity) {
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
             return new Promise(async (resolve, reject) => {
