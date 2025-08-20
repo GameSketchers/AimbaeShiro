@@ -30,7 +30,6 @@ const cheatInstanceId = '_' + Math.random().toString(36).slice(2);
 window[cheatInstanceId] = function() {
     'use strict';
     delete window[cheatInstanceId];
-    document.getElementById('splash').style.display = 'none';
 
     class AimbaeShiro {
         constructor() {
@@ -72,6 +71,7 @@ window[cheatInstanceId] = function() {
                 aimbotTeamCheck: true,
                 autoFireEnabled: false,
                 fovSize: 90,
+                aimOffset: 0,
                 drawFovCircle: true,
                 espLines: true,
                 espSquare: true,
@@ -513,8 +513,7 @@ window[cheatInstanceId] = function() {
                     const centerY = this.overlay.canvas.height / 2;
 
                     potentialTargets = potentialTargets.filter(p => {
-                        const headPos = this.getTargetPosition(p);
-                        const screenPos = this.world2Screen(new this.three.Vector3(headPos.x, headPos.y, headPos.z));
+                        const screenPos = this.world2Screen(new this.three.Vector3(p.x, p.y, p.z));
                         if (!screenPos) return false;
 
                         const dist = Math.sqrt(Math.pow(screenPos.x - centerX, 2) + Math.pow(screenPos.y - centerY, 2));
@@ -525,31 +524,19 @@ window[cheatInstanceId] = function() {
                 target = potentialTargets[0] || null;
             }
 
-            this.controls.target = null;
-
             if (target && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && !this.me.weapon.melee) {
+                const yaw = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
+                const pitch = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
 
-                const targetPos = this.getTargetPosition(target);
-
-                target.isTarget = this.settings.markTarget;
-                const yaw = this.getDirection(this.me.z, this.me.x, targetPos.z, targetPos.x);
-                const pitch = this.getXDirection(this.me.x, this.me.y, this.me.z, targetPos.x, targetPos.y, targetPos.z);
-                const compensatedPitch = pitch - (0.3 * this.me.recoilAnimY);
-
-                this.lookDir(compensatedPitch, yaw);
+                this.lookDir(pitch, yaw);
 
                 if (this.settings.autoFireEnabled) {
                     inputPacket[gameInputIndices.scope] = 1;
                     if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
                 }
             } else if (target && this.me.weapon.melee) {
-
-                const targetPos = this.getTargetPosition(target);
-
-                target.isTarget = this.settings.markTarget;
-                const yaw = this.getDirection(this.me.z, this.me.x, targetPos.z, targetPos.x);
-                const pitch = this.getXDirection(this.me.x, this.me.y, this.me.z, targetPos.x, targetPos.y, targetPos.z);
-                const compensatedPitch = pitch - (0.3 * this.me.recoilAnimY);
+                const yaw = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
+                const pitch = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
 
                 const distance = this.getDistance(this.me, target);
 
@@ -557,13 +544,13 @@ window[cheatInstanceId] = function() {
                 const throwRange = 65.24113971486675;
 
                 if (distance <= closeRange) {
-                    this.lookDir(compensatedPitch, yaw);
+                    this.lookDir(pitch, yaw);
 
-                    if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal > 0) {
+                    if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0) {
                         inputPacket[gameInputIndices.shoot] = 1;
                     }
                 } else if (distance <= throwRange && this.me.weapon.canThrow) {
-                    this.lookDir(compensatedPitch, yaw);
+                    this.lookDir(pitch, yaw);
 
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
@@ -664,34 +651,34 @@ window[cheatInstanceId] = function() {
             .anonimbiri-notify-action-btn:hover{background:#ff0080;transform:scale(1.05)}
             `;
 
-                const style = document.createElement('style');
-                style.textContent = menuCSS;
-                document.head.appendChild(style);
+            const style = document.createElement('style');
+            style.textContent = menuCSS;
+            document.head.appendChild(style);
 
-                const neonIcons = {
-                    aimbot: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
-                    rightMouse: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 6v4"/>',
-                    wallCheck: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16M8 6v12M16 6v12"/>',
-                    wallbangs: '<rect x="2" y="2" width="2" height="20" rx="1"/><path d="M4 2l10 3v16L4 18V2z"/><circle cx="12" cy="12" r="1"/><path d="M16 12h6m-3-2l2 2-2 2"/>',
-                    wallbangsWireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18"/><path d="M20 7l-8 4-8-4"/><path d="M4 11l8 4 8-4"/>',
-                    teamCheck: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
-                    autoFire: '<path d="M13 3L6 12h4l-2 9 8-12h-4l1-6z"/>',
-                    espLines: '<circle cx="12" cy="12" r="9"/><path d="M12 12l6-6M12 12h9M12 12v9"/>',
-                    espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
-                    nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
-                    weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
-                    colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
-                    wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
-                    unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
-                    bunnyHop: '<path d="M6 16l6-6 6 6"/><path d="M6 10h12"/>',
-                    autoNuke: '<circle cx="12" cy="12" r="2"/><path d="M12 4v4l-3 2"/><path d="M20 12h-4l-2-3"/><path d="M12 20v-4l3-2"/>',
-                    antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
-                    autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
-                    hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
-                    fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>'
-                };
+            const neonIcons = {
+                aimbot: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+                rightMouse: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 6v4"/>',
+                wallCheck: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16M8 6v12M16 6v12"/>',
+                wallbangs: '<rect x="2" y="2" width="2" height="20" rx="1"/><path d="M4 2l10 3v16L4 18V2z"/><circle cx="12" cy="12" r="1"/><path d="M16 12h6m-3-2l2 2-2 2"/>',
+                wallbangsWireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18"/><path d="M20 7l-8 4-8-4"/><path d="M4 11l8 4 8-4"/>',
+                teamCheck: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
+                autoFire: '<path d="M13 3L6 12h4l-2 9 8-12h-4l1-6z"/>',
+                espLines: '<circle cx="12" cy="12" r="9"/><path d="M12 12l6-6M12 12h9M12 12v9"/>',
+                espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
+                nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
+                weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
+                colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
+                wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
+                unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
+                bunnyHop: '<path d="M6 16l6-6 6 6"/><path d="M6 10h12"/>',
+                autoNuke: '<circle cx="12" cy="12" r="2"/><path d="M12 4v4l-3 2"/><path d="M20 12h-4l-2-3"/><path d="M12 20v-4l3-2"/>',
+                antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
+                autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
+                hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
+                fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>'
+            };
 
-                const menuHTML = `
+            const menuHTML = `
             <div class="anonimbiri-menu-container" id="anonimbiri-cheatMenu">
                 <div class="anonimbiri-menu-header" id="anonimbiri-menuHeader">
                 <div class="anonimbiri-close-btn" id="anonimbiri-closeBtn">
@@ -756,7 +743,7 @@ window[cheatInstanceId] = function() {
                 </div>
             </div>`;
 
-                const hotkeyModalHTML = `
+            const hotkeyModalHTML = `
             <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
                 <div class="anonimbiri-hotkey-content">
                     <h2>Assign Hotkey</h2>
@@ -765,34 +752,34 @@ window[cheatInstanceId] = function() {
                 </div>
             </div>`;
 
-                const container = document.createElement('div');
-                container.innerHTML = menuHTML + hotkeyModalHTML;
-                document.body.appendChild(container);
+            const container = document.createElement('div');
+            container.innerHTML = menuHTML + hotkeyModalHTML;
+            document.body.appendChild(container);
 
-                this.gui = document.getElementById('anonimbiri-cheatMenu');
-                this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
+            this.gui = document.getElementById('anonimbiri-cheatMenu');
+            this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-                if (this.settings.menuLeftPx !== null && this.settings.menuTopPx !== null) {
-                    this.gui.style.left = `${this.settings.menuLeftPx}px`;
-                    this.gui.style.top = `${this.settings.menuTopPx}px`;
-                } else {
-                    setTimeout(() => {
-                        const t = this.gui.getBoundingClientRect();
-                        this.gui.style.left = `calc(50% - ${t.width / 2}px)`;
-                        this.gui.style.top = `calc(50% - ${t.height / 2}px)`;
-                        const e = this.gui.getBoundingClientRect();
-                        this.settings.menuLeftPx = e.left;
-                        this.settings.menuTopPx = e.top;
-                        this.saveSettings('aimbaeshiro_settings', this.settings);
-                    }, 100);
-                }
-
-                if (this.settings.menuVisible) this.gui.classList.add('visible');
-
-                this.updateAllGUIElements();
-                this.makeMenuDraggable();
-                this.bindSliderUI();
+            if (this.settings.menuLeftPx !== null && this.settings.menuTopPx !== null) {
+                this.gui.style.left = `${this.settings.menuLeftPx}px`;
+                this.gui.style.top = `${this.settings.menuTopPx}px`;
+            } else {
+                setTimeout(() => {
+                    const t = this.gui.getBoundingClientRect();
+                    this.gui.style.left = `calc(50% - ${t.width / 2}px)`;
+                    this.gui.style.top = `calc(50% - ${t.height / 2}px)`;
+                    const e = this.gui.getBoundingClientRect();
+                    this.settings.menuLeftPx = e.left;
+                    this.settings.menuTopPx = e.top;
+                    this.saveSettings('aimbaeshiro_settings', this.settings);
+                }, 100);
             }
+
+            if (this.settings.menuVisible) this.gui.classList.add('visible');
+
+            this.updateAllGUIElements();
+            this.makeMenuDraggable();
+            this.bindSliderUI();
+        }
 
         createMenuItemHTML(type, setting, label, iconPath) {
             let controlHTML = '';
@@ -806,23 +793,23 @@ window[cheatInstanceId] = function() {
                         <input type="color" class="anonimbiri-color-picker-input" data-setting="${setting}">
                         <div class="anonimbiri-color-preview" data-setting="${setting}"></div>
                     </div>`;
-                        break;
-                    case 'hotkey':
-                        controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}"></div>`;
-                        break;
-                    case 'slider':
-                        const val = (this.settings && typeof this.settings[setting] !== 'undefined') ? this.settings[setting] : 0;
-                        controlHTML = `<div class="anonimbiri-slider-container" data-setting="${setting}">
+                    break;
+                case 'hotkey':
+                    controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}"></div>`;
+                    break;
+                case 'slider':
+                    const val = (this.settings && typeof this.settings[setting] !== 'undefined') ? this.settings[setting] : 0;
+                    controlHTML = `<div class="anonimbiri-slider-container" data-setting="${setting}">
                         <input type="range" class="anonimbiri-slider" data-setting="${setting}" min="0" max="300" step="1" value="${val}">
                         <div class="anonimbiri-slider-value" data-setting="${setting}">${val <= 0 ? 'Off' : val}</div>
                     </div>`;
-                        break;
-                }
-                return `<div class="anonimbiri-menu-item" data-setting="${setting}">
+                    break;
+            }
+            return `<div class="anonimbiri-menu-item" data-setting="${setting}">
                 <div class="anonimbiri-menu-item-content">${iconSVG}<label>${label}</label></div>
                 <div class="anonimbiri-controls">${controlHTML}</div>
             </div>`;
-            }
+        }
 
         bindSliderUI() {
             this.gui.querySelectorAll('.anonimbiri-slider').forEach(slider => {
@@ -881,7 +868,7 @@ window[cheatInstanceId] = function() {
                 const menuItem = e.target.closest('.anonimbiri-menu-item');
                 if (!menuItem) return;
                 const setting = menuItem.dataset.setting;
-                if (!setting || menuItem.querySelector('.anonimbiri-slider-container')) return; // Ignore clicks on slider items
+                if (!setting || menuItem.querySelector('.anonimbiri-slider-container')) return;
 
                 if (window.SOUND) window.SOUND.play('select_0', 0.1);
 
@@ -946,7 +933,6 @@ window[cheatInstanceId] = function() {
         getDistance(p1, p2) { return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2)); }
         getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
         getXDirection(t,e,o,i,s,n){const r=s-e,a=this.getDistance({x:t,y:e,z:o},{x:i,y:s,z:n});return Math.asin(r/a)}
-        getTargetPosition(t){const e=this.PLAYER_HEIGHT/6.6;return{x:t.x,y:t.y-t.crouchVal*this.CROUCH_FACTOR+e,z:t.z}}
 
         lineInRect(lx1, lz1, ly1, dx, dz, dy, x1, z1, y1, x2, z2, y2) {
             let t1 = (x1 - lx1) * dx;
@@ -1057,8 +1043,15 @@ window[cheatInstanceId] = function() {
                 this.ctx.strokeStyle = "#000000"; this.ctx.lineWidth = 2.5; this.ctx.textAlign = "left";
                 let textY = ymin + 1, lineSpacing = 16;
                 this.ctx.strokeText(player.name || 'Player', xmax + 5, textY); this.ctx.fillText(player.name || 'Player', xmax + 5, textY); textY += lineSpacing;
-                if (player.health) { const healthText = `♥ ${player.health}`; this.ctx.strokeText(healthText, xmax+5, textY); this.ctx.fillText(healthText, xmax+5, textY); textY += lineSpacing; }
+                if (player.health) { const healthText = `♥ ${Math.round(player.health)}`; this.ctx.strokeText(healthText, xmax+5, textY); this.ctx.fillText(healthText, xmax+5, textY); textY += lineSpacing; }
                 if (player.weapon && this.settings.espWeaponIcons) { const weaponText = `❖ ${player.weapon.name}`; this.ctx.strokeText(weaponText, xmax + 5, textY); this.ctx.fillText(weaponText, xmax + 5, textY); }
+                const distance = Math.round(this.getDistance(this.me, player) / 10);
+                const distanceText = `[${distance}m]`;
+                const distanceTextX = xmin + boxWidth / 2;
+                const distanceTextY = ymax + lineSpacing;
+                this.ctx.textAlign = "center";
+                this.ctx.strokeText(distanceText, distanceTextX, distanceTextY);
+                this.ctx.fillText(distanceText, distanceTextX, distanceTextY);
                 this.ctx.restore();
             }
         }
@@ -1090,12 +1083,13 @@ const observer = new MutationObserver(function (mutations) {
         if (mutation.addedNodes) {
             for (const node of mutation.addedNodes) {
                 if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
-                    node.remove(); observer.disconnect();
+                    node.remove(); //observer.disconnect();
                     const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
                     if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
                                             } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
                 }
+                if (node.id === 'splash'){node.remove(); observer.disconnect();}
             }
         }
     }
