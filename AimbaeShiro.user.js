@@ -500,6 +500,8 @@ window[cheatInstanceId] = function() {
                 inputPacket[gameInputIndices.reload] = 1;
             }
 
+            //console.log(this.game.weaponConfig[this.me.loadout[this.me.loadoutIndex]].secondary);
+
             // Aimbot
             let target = null;
             if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
@@ -1083,13 +1085,12 @@ const observer = new MutationObserver(function (mutations) {
         if (mutation.addedNodes) {
             for (const node of mutation.addedNodes) {
                 if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
-                    node.remove(); //observer.disconnect();
+                    node.remove(); observer.disconnect();
                     const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
                     if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
                                             } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
                 }
-                if (node.id === 'splash'){node.remove(); observer.disconnect();}
             }
         }
     }
