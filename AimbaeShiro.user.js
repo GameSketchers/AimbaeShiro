@@ -488,7 +488,7 @@ window[cheatInstanceId] = function() {
         }
 
         onProcessInputs(inputPacket, player) {
-            const gameInputIndices = { frame: 0, slowMotion: 1, pitch: 2, yaw: 3, moveDir: 4, shoot: 5, scope: 6, jump: 7, reload: 8, crouch: 9, weaponMelee: 10, weaponSecondary: 11, moveLock: 12 };
+            const gameInputIndices = { frame: 0, delta: 1, xdir: 2, ydir: 3, moveDir: 4, shoot: 5, scope: 6, jump: 7, reload: 8, crouch: 9, weaponScroll: 10, weaponSwap: 11, moveLock: 12 };
 
             if (this.settings.bhopEnabled && this.pressedKeys.has('Space')) {
                 this.controls.keys[this.controls.binds.jump.val] ^= 1;
@@ -537,18 +537,22 @@ window[cheatInstanceId] = function() {
             }
 
             if (target && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && !this.me.weapon.melee) {
-                const yaw = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
-                const pitch = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
+                const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
+                const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
 
-                this.lookDir(pitch, yaw);
+                this.lookDir(yDire, xDire);
+
+                // süper silet için
+                /*inputPacket[gameInputIndices.ydir] = yDire;
+                inputPacket[gameInputIndices.xdir] = xDire;*/
 
                 if (this.settings.autoFireEnabled) {
                     if (!this.me.weapon.noAim) inputPacket[gameInputIndices.scope] = 1;
                     if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot) inputPacket[gameInputIndices.shoot] = 1;
                 }
             } else if (target && this.me.weapon.melee) {
-                const yaw = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
-                const pitch = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
+                const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
+                const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
 
                 const distance = this.getDistance(this.me, target);
 
@@ -556,13 +560,13 @@ window[cheatInstanceId] = function() {
                 const throwRange = 65.24113971486675;
 
                 if (distance <= closeRange) {
-                    this.lookDir(pitch, yaw);
+                    this.lookDir(yDire, xDire);
 
                     if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0) {
                         inputPacket[gameInputIndices.shoot] = 1;
                     }
                 } else if (distance <= throwRange && this.me.weapon.canThrow) {
-                    this.lookDir(pitch, yaw);
+                    this.lookDir(yDire, xDire);
 
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
@@ -1124,7 +1128,7 @@ const observer = new MutationObserver(function (mutations) {
                     node.remove(); observer.disconnect();
                     const modifiedGameScript = downloadFileSync(`https://raw.githubusercontent.com/GameSketchers/AimbaeShiro/refs/heads/main/GameSource/game.js`);
                     if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
-                                        } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
+                                            } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
                 }
             }
