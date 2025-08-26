@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.4.7
+// @version      1.4.8
 // @description    Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -45,6 +45,7 @@ window[cheatInstanceId] = function() {
             this.ctx = null;
             this.socket = null;
             this.skins = null;
+            this.playerMaps = [];
             this.scale = 1;
             this.three = null;
             this.notifyContainer = null;
@@ -52,6 +53,7 @@ window[cheatInstanceId] = function() {
             this.PLAYER_HEIGHT = 11;
             this.PLAYER_WIDTH = 4;
             this.CROUCH_FACTOR = 3;
+            this.BOT_CROUCH_FACTOR = 2;
             this.CAMERA_HEIGHT = 1.5;
 
             this.tempVector = null;
@@ -69,6 +71,7 @@ window[cheatInstanceId] = function() {
                 aimbotWallCheck: true,
                 aimbotWallBangs: false,
                 aimbotTeamCheck: true,
+                aimbotBotCheck: true,
                 autoFireEnabled: false,
                 fovSize: 90,
                 aimOffset: 0,
@@ -78,12 +81,14 @@ window[cheatInstanceId] = function() {
                 espNameTags: true,
                 espWeaponIcons: true,
                 espTeamCheck: true,
+                espBotCheck: true,
                 wireframeEnabled: false,
                 unlockSkins: true,
                 bhopEnabled: false,
                 menuVisible: true,
                 espColor: "#ff0080",
                 boxColor: "#ff0080",
+                botColor: "#00ff80",
                 menuTopPx: null,
                 menuLeftPx: null,
                 autoNuke: false,
@@ -105,6 +110,8 @@ window[cheatInstanceId] = function() {
                 espNameTags: 'Numpad1',
                 espWeaponIcons: 'Numpad2',
                 unlockSkins: 'Numpad3',
+                aimbotBotCheck: 'Numpad4',
+                espBotCheck: 'Numpad5',
             };
             this.settings = {};
             this.hotkeys = {};
@@ -310,9 +317,12 @@ window[cheatInstanceId] = function() {
                     set(value) {
                         if(cheatInstance.three == null){
                             console.log("🌸 AimbaeShiro: THREE object captured!");
+                            console.log(cheatInstance);
                             cheatInstance.three = value;
                             cheatInstance.tempVector = new value.Vector3();
                             cheatInstance.cameraPos = new value.Vector3();
+                            cheatInstance.rayC = new value.Raycaster();
+                            cheatInstance.vec2 = new value.Vector2(0, 0);
                         }
                         this['_value'] = value;
                     },
@@ -476,7 +486,14 @@ window[cheatInstanceId] = function() {
 
             for (const player of this.game.players.list) {
                 if (player.isYou || !player.active || !player.objInstances) continue;
-                this.drawCanvasESP(player, CRC2d);
+                this.drawCanvasESP(player , false, CRC2d);
+            }
+
+            if(this.settings.espBotCheck){
+                for (const bot of this.game.AI.ais) {
+                    if (!bot.mesh && !bot.mesh.visible && bot.health >! 0) continue;
+                    this.drawCanvasESP(bot, true, CRC2d);
+                }
             }
 
             CRC2d.restore.apply(this.ctx, []);
@@ -514,10 +531,21 @@ window[cheatInstanceId] = function() {
 
             // Aimbot
             let target = null;
+            /*this.playerMaps.length = 0;
+            this.rayC.setFromCamera(this.vec2, this.renderer.fpsCamera);*/
             if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
                 let potentialTargets = this.game.players.list
                 .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || this.getCanSee(p)))
-                .sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
+                .map(p => ({ ...p, isBot: false }));
+
+                if (this.settings.aimbotBotCheck && this.game.AI?.ais) {
+                    const botTargets = this.game.AI.ais
+                    .filter(bot => bot.mesh && bot.mesh.visible && bot.health > 0 && (!this.settings.aimbotWallCheck || this.getCanSee(bot)))
+                    .map(bot => ({ ...bot, isBot: true }));
+                    potentialTargets = potentialTargets.concat(botTargets);
+                }
+
+                potentialTargets.sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
 
                 if (this.settings.fovSize > 0) {
                     const fovRadius = this.settings.fovSize;
@@ -538,18 +566,28 @@ window[cheatInstanceId] = function() {
 
             if (target && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && !this.me.weapon.melee) {
                 const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
-                const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
+                //const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
+                const xDire = target.isBot ? ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.dat.mSize / 2, target.z) || 0) - (0.3 * this.me.recoilAnimY)) : ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY))
 
-                this.lookDir(yDire, xDire);
+                this.lookDir(xDire, yDire);
 
                 // süper silet için
-                /*inputPacket[gameInputIndices.ydir] = yDire;
-                inputPacket[gameInputIndices.xdir] = xDire;*/
+                /*inputPacket[gameInputIndices.xdir] = xDire * 1e3;
+                inputPacket[gameInputIndices.ydir] = yDire * 1e3;*/
 
-                if (this.settings.autoFireEnabled) {
+                //gereksiz fare'nin oyuncuda olup olmadığını konturol ediyor
+                /*this.playerMaps = this.game.players.list
+                    .map(p => p.objInstances)
+                    .filter(Boolean);
+                let inCast = this.rayC.intersectObjects(this.playerMaps, true).length;
+                let canSee = target && this.containsPoint(target.objInstances.position);*/
+
+                if (this.settings.autoFireEnabled && !this.me.weapon.melee /*&& inCast && canSee*/) {
                     if (!this.me.weapon.noAim) inputPacket[gameInputIndices.scope] = 1;
                     if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot) inputPacket[gameInputIndices.shoot] = 1;
                 }
+
+
             } else if (target && this.me.weapon.melee) {
                 const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
                 const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
@@ -560,19 +598,26 @@ window[cheatInstanceId] = function() {
                 const throwRange = 65.24113971486675;
 
                 if (distance <= closeRange) {
-                    this.lookDir(yDire, xDire);
+                    this.lookDir(xDire, yDire);
 
                     if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0) {
                         inputPacket[gameInputIndices.shoot] = 1;
                     }
                 } else if (distance <= throwRange && this.me.weapon.canThrow) {
-                    this.lookDir(yDire, xDire);
+                    this.lookDir(xDire, yDire);
 
                     if (this.settings.autoFireEnabled) {
                         inputPacket[gameInputIndices.scope] = 1;
                         if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
                     }
                 }
+            } else if (this.me.weapon.nAuto && this.me.didShoot) {
+                inputPacket[gameInputIndices.shoot] = 0;
+                inputPacket[gameInputIndices.scope] = 0;
+                this.me.inspecting = false;
+                this.me.inspectX = 0;
+            } else if (this.settings.fovSize >! 0) {
+                this.resetLookAt();
             }
         }
 
@@ -691,8 +736,11 @@ window[cheatInstanceId] = function() {
                 antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
                 autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
                 hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
-                fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>'
+                fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>',
+                botCheck: '<circle cx="12" cy="4" r="1.4"/><path d="M12 5.6v1.8"/><rect x="5" y="8" width="14" height="10" rx="3"/><circle cx="9" cy="13" r="1.2"/><circle cx="15" cy="13" r="1.2"/><path d="M9 16h6"/><path d="M5.5 19l1.8 1.8L10.5 17.6" />',
+                botColor: '<path d="M12 5a7 7 0 1 0 0 14c1.8 0 3-1.2 3-2.6 0-1-1-1.8-2.2-1.8h-.8a2.6 2.6 0 1 1 0-5.2h1"/><circle cx="8.5" cy="11" r="1"/><circle cx="11.5" cy="9.5" r="1"/><circle cx="15.2" cy="11.2" r="1"/><circle cx="9.5" cy="14" r="1"/><path d="M18.5 6.5l.8 2 .8-2 2-.8-2-.8-.8-2-.8 2-2 .8 2 .8z"/>'
             };
+
 
             const menuHTML = `
              <div class="anonimbiri-menu-container" id="anonimbiri-cheatMenu">
@@ -716,6 +764,7 @@ window[cheatInstanceId] = function() {
                      ${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check', neonIcons.wallCheck)}
                      ${this.createMenuItemHTML('toggle','aimbotWallBangs','WallBangs', neonIcons.wallbangs)}
                      ${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check', neonIcons.teamCheck)}
+                     ${this.createMenuItemHTML('toggle','aimbotBotCheck','Bot Aim', neonIcons.botCheck)}
                      ${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire', neonIcons.autoFire)}
                      ${this.createMenuItemHTML('slider','fovSize','FOV Size', neonIcons.fov)}
                      ${this.createMenuItemHTML('toggle','drawFovCircle','Draw FOV Circle', neonIcons.espSquare)}
@@ -723,12 +772,14 @@ window[cheatInstanceId] = function() {
 
                  <div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">
                      ${this.createMenuItemHTML('toggle','espTeamCheck','Team Check', neonIcons.teamCheck)}
+                     ${this.createMenuItemHTML('toggle','espBotCheck','Bot Esp', neonIcons.botCheck)}
                      ${this.createMenuItemHTML('toggle','espLines','Energy Trail ESP', neonIcons.espLines)}
                      ${this.createMenuItemHTML('toggle','espSquare','Glowing Box ESP', neonIcons.espSquare)}
                      ${this.createMenuItemHTML('toggle','espNameTags','Full Info (Name/HP/Wpn)', neonIcons.nameTags)}
                      ${this.createMenuItemHTML('toggle','espWeaponIcons','Show Weapon (in Full Info)', neonIcons.weaponIcons)}
                      ${this.createMenuItemHTML('color','espColor','Trail Color', neonIcons.colorPicker)}
                      ${this.createMenuItemHTML('color','boxColor','Box & Info Color', neonIcons.colorPicker)}
+                     ${this.createMenuItemHTML('color','botColor','Bot Color', neonIcons.botColor)}
                  </div>
 
                  <div class="anonimbiri-tab-pane" id="anonimbiri-tab-misc">
@@ -746,7 +797,9 @@ window[cheatInstanceId] = function() {
                      ${this.createMenuItemHTML('hotkey','aimbotWallCheck','Toggle Wall Check', neonIcons.wallCheck)}
                      ${this.createMenuItemHTML('hotkey','aimbotWallBangs','Toggle WallBangs', neonIcons.wallbangs)}
                      ${this.createMenuItemHTML('hotkey','aimbotTeamCheck','Toggle Aimbot Team', neonIcons.teamCheck)}
+                     ${this.createMenuItemHTML('hotkey','aimbotBotCheck','Toggle Bot Aim', neonIcons.botCheck)}
                      ${this.createMenuItemHTML('hotkey','espTeamCheck','Toggle ESP Team', neonIcons.teamCheck)}
+                     ${this.createMenuItemHTML('hotkey','espBotCheck','Toggle Bot ESP', neonIcons.botCheck)}
                      ${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info', neonIcons.nameTags)}
                      ${this.createMenuItemHTML('hotkey','espWeaponIcons','Toggle Weapon Icon', neonIcons.weaponIcons)}
                      ${this.createMenuItemHTML('hotkey','autoFireEnabled','Toggle Auto Fire', neonIcons.autoFire)}
@@ -950,6 +1003,16 @@ window[cheatInstanceId] = function() {
         getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
         getXDirection(t,e,o,i,s,n){const r=s-e,a=this.getDistance({x:t,y:e,z:o},{x:i,y:s,z:n});return Math.asin(r/a)}
 
+        containsPoint(point) {
+            let planes = this.renderer.frustum.planes;
+            for (let i = 0; i < 6; i ++) {
+                if (planes[i].distanceToPoint(point) < 0) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         lineInRect(lx1, lz1, ly1, dx, dz, dy, x1, z1, y1, x2, z2, y2) {
             let t1 = (x1 - lx1) * dx;
             let t2 = (x2 - lx1) * dx;
@@ -1003,6 +1066,13 @@ window[cheatInstanceId] = function() {
             this.renderer.updateFrustum();
         }
 
+        resetLookAt() {
+            this.controls.yDr = this.controls.pchObjc.rotation.x;
+            this.controls.xDr = this.controls.object.rotation.y;
+            this.renderer.camera.updateProjectionMatrix();
+            this.renderer.updateFrustum();
+        }
+
         world2Screen(worldPosition) {
             if (!this.renderer?.camera || !this.overlay?.canvas) return null;
             const pos = worldPosition.clone(); pos.project(this.renderer.camera);
@@ -1010,12 +1080,12 @@ window[cheatInstanceId] = function() {
             return { x: (pos.x + 1) / 2 * this.overlay.canvas.width, y: (-pos.y + 1) / 2 * this.overlay.canvas.height, };
         }
 
-        drawCanvasESP(player, CRC2d) {
+        drawCanvasESP(player, isBot, CRC2d) {
             if (this.settings.espTeamCheck && this.isTeam(player)) return;
 
             const playerPos = new this.three.Vector3(player.x, player.y, player.z);
-            const effectiveHeight = this.PLAYER_HEIGHT - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
-            const halfWidth = this.PLAYER_WIDTH / 2;
+            const effectiveHeight = isBot ? player.dat.mSize /*player.height - ((- player.dat.mSize || 0) / this.BOT_CROUCH_FACTOR)*/ : (player.height || this.PLAYER_HEIGHT) - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
+            const halfWidth = isBot ? (player.dat.mSize * 0.4) / 2 : this.PLAYER_WIDTH / 2;
             const corners = [
                 new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z - halfWidth),
                 new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z + halfWidth),
@@ -1036,7 +1106,7 @@ window[cheatInstanceId] = function() {
             CRC2d.save.apply(this.ctx, []);
 
             if (this.settings.espLines) {
-                const startX = this.overlay.canvas.width / 2, startY = this.overlay.canvas.height, endX = xmin + boxWidth / 2, endY = ymax, trailColor = this.settings.espColor;
+                const startX = this.overlay.canvas.width / 2, startY = this.overlay.canvas.height, endX = xmin + boxWidth / 2, endY = ymax, trailColor = isBot ? this.settings.botColor : this.settings.espColor;
                 const hexToRgba = (hex, alpha) => { let r=0,g=0,b=0; if (hex.length == 7) { r=parseInt(hex.slice(1,3),16); g=parseInt(hex.slice(3,5),16); b=parseInt(hex.slice(5,7),16); } return `rgba(${r},${g},${b},${alpha})`; };
                 const gradient = this.ctx.createLinearGradient(startX, startY, endX, endY);
                 gradient.addColorStop(0, hexToRgba(trailColor, 0.7)); gradient.addColorStop(1, hexToRgba(trailColor, 0));
@@ -1048,12 +1118,11 @@ window[cheatInstanceId] = function() {
             }
 
             if (this.settings.espSquare) {
-                this.ctx.shadowColor = this.settings.boxColor; this.ctx.shadowBlur = 10; this.ctx.lineWidth = 2; this.ctx.strokeStyle = this.settings.boxColor;
+                this.ctx.shadowColor = this.settings.boxColor; this.ctx.shadowBlur = 10; this.ctx.lineWidth = 2; this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
                 CRC2d.strokeRect.apply(this.ctx, [xmin, ymin, boxWidth, boxHeight]);
             }
 
             if (this.settings.espNameTags) {
-                // Disable glow for text
                 this.ctx.shadowBlur = 0;
 
                 if (player.health && player.maxHealth) {
