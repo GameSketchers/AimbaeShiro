@@ -1,10 +1,11 @@
 <div align="center">
   <a href="https://youtu.be/23tSqySN_T4">
-    <img src="https://img.youtube.com/vi/23tSqySN_T4/0.jpg" alt="Watch the video guide">
+    <img src="https://img.youtube.com/vi/23tSqySN_T4/maxresdefault.jpg" alt="Watch the video guide">
   </a>
   <br>
   <sub><b>Click the image above to watch the video guide</b></sub>
 </div>
+
 
 # Krunker.io game.js Deobfuscation Guide
 
