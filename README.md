@@ -14,7 +14,7 @@
   <a href="https://greasyfork.org/scripts/538607">
     <img src="https://img.shields.io/greasyfork/dt/538607?style=for-the-badge&label=GreasyFork%20Installs&color=ff66cc&logo=greasyfork" alt="GreasyFork Installs">
   </a>
-  <a href="./kurunker-Deobfuscate-Guide.md">
+  <a href="./Krunker-Deobfuscate-Guide.md">
     <img src="https://img.shields.io/badge/Guide-Deobfuscation-ff66cc?style=for-the-badge&logo=book&logoColor=white" alt="Deobfuscation Guide">
   </a>
 </p>
