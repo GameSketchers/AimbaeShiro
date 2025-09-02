@@ -732,11 +732,10 @@ window[cheatInstanceId] = function() {
                      <p>(Press ESC to cancel)</p>
                  </div>
              </div>`;
-            if (!document.getElementById('anonimbiri-hotkeyModal')) {
-                const modalContainer = document.createElement('div');
-                modalContainer.innerHTML = hotkeyModalHTML;
-                document.body.appendChild(modalContainer);
-            }
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = hotkeyModalHTML;
+            document.body.appendChild(modalContainer);
+            this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
             this.GUI.windowIndex = window.windows.length+1;
             this.GUI.windowObj = {
@@ -996,7 +995,7 @@ window[cheatInstanceId] = function() {
             window.addEventListener('pointerup', (e) => { if (e.button === 2) this.rightMouseDown = false; });
             window.addEventListener('keydown', (e) => {
                 this.pressedKeys.add(e.code);
-                if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA" || window.windows.some(w => !w.closed)) return;
+                if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
 
                 if (this.isBindingHotkey) {
                     e.preventDefault(); e.stopPropagation();
@@ -1004,13 +1003,14 @@ window[cheatInstanceId] = function() {
                     if (Object.values(this.hotkeys).includes(e.code)) { this.notify({ title: "Hotkey Error", message: "Key already assigned!"}); return; }
                     this.hotkeys[this.currentBindingSetting] = e.code;
                     this.saveSettings('aimbaeshiro_hotkeys', this.hotkeys);
-                    this.hideHotkeyModal();
 
                     const menu = document.querySelector('.anonimbiri-menu-container');
                     if(menu) {
                         const btn = menu.querySelector(`.anonimbiri-hotkey[data-hotkey="${this.currentBindingSetting}"]`);
                         if(btn) btn.textContent = e.code.replace('Key', '').replace('Digit', '');
                     }
+
+                    this.hideHotkeyModal();
                     return;
                 }
 
@@ -1244,7 +1244,7 @@ const observer = new MutationObserver(function (mutations) {
             for (const node of mutation.addedNodes) {
                 if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
                     node.remove(); observer.disconnect();
-                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
+                    const modifiedGameScript = downloadFileSync(`https://raw.githubusercontent.com/GameSketchers/AimbaeShiro/refs/heads/main/GameSource/game.js`);
                     if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
                                             } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
