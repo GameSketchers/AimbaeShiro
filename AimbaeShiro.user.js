@@ -1082,7 +1082,7 @@ window[cheatInstanceId] = function() {
             const toX = player.x, toY = player.y, toZ = player.z;
 
             for (let obj, dist = this.getDistance(from, player), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(this.getDistance({x: from.x, y: 0, z: from.z}, {x: toX, y: 0, z: toZ}), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
-                if (!(obj = this.game.map.manager.objects[i]).noShoot && obj.active && !obj.transparent && (!this.settings.aimbotWallBangs || (!obj.penetrable || !this.me.weapon.pierce))) {
+                if (!(obj = this.game.map.manager.objects[i]).noShoot && obj.active && obj.transparent !== false && (!this.settings.aimbotWallBangs || (!obj.penetrable || !this.me.weapon.pierce))) {
                     let tmpDst = this.lineInRect(from.x, from.z, yOffset, dx, dz, dy, obj.x - Math.max(0, obj.width - boxSize), obj.z - Math.max(0, obj.length - boxSize), obj.y - Math.max(0, obj.height - boxSize), obj.x + Math.max(0, obj.width - boxSize), obj.z + Math.max(0, obj.length - boxSize), obj.y + Math.max(0, obj.height - boxSize));
                     if (tmpDst && 1 > tmpDst) return false;
                 }
