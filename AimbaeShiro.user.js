@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.4.9
+// @version      1.5.0
 // @description    Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -86,7 +86,6 @@ window[cheatInstanceId] = function() {
                 wireframeEnabled: false,
                 unlockSkins: true,
                 bhopEnabled: false,
-                menuVisible: true,
                 espColor: "#ff0080",
                 boxColor: "#ff0080",
                 botColor: "#00ff80",
@@ -470,7 +469,7 @@ window[cheatInstanceId] = function() {
 
             CRC2d.save.apply(this.ctx, []);
 
-            if (this.settings.fovSize > 0 && this.settings.drawFovCircle && !this.settings.menuVisible) {
+            if (this.settings.fovSize > 0 && this.settings.drawFovCircle) {
                 const centerX = this.overlay.canvas.width / 2;
                 const centerY = this.overlay.canvas.height / 2;
                 const radius = this.settings.fovSize;
@@ -612,13 +611,13 @@ window[cheatInstanceId] = function() {
                         if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
                     }
                 }
+            } else if (!target && this.settings.fovSize >! 0) {
+                this.resetLookAt();
             } else if (this.me.weapon.nAuto && this.me.didShoot) {
                 inputPacket[gameInputIndices.shoot] = 0;
                 inputPacket[gameInputIndices.scope] = 0;
                 this.me.inspecting = false;
                 this.me.inspectX = 0;
-            } else if (this.settings.fovSize >! 0) {
-                this.resetLookAt();
             }
         }
 
@@ -657,7 +656,7 @@ window[cheatInstanceId] = function() {
              .anonimbiri-tab:last-child{border-right:none}
              .anonimbiri-tab:hover{background:rgba(255,0,128,.2);color:#fff;transform:translateY(-2px)}
              .anonimbiri-tab.active{background:linear-gradient(45deg,#ff0080,#ff4da6);color:#fff;box-shadow:0 2px 10px rgba(255,0,128,.5)}
-             .anonimbiri-tab-content{padding:15px;min-height:150px;overflow-y:auto}
+             .anonimbiri-tab-content{padding:15px;min-height:150px;overflow-y:auto;height: calc(97% - 300px);}
              .anonimbiri-tab-pane{display:none}
              .anonimbiri-tab-pane.active{display:block;animation:anonimbiri-fadeIn .3s ease}
              @keyframes anonimbiri-fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -737,7 +736,7 @@ window[cheatInstanceId] = function() {
             document.body.appendChild(modalContainer);
             this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-            this.GUI.windowIndex = window.windows.length+1;
+            this.GUI.windowIndex = window.windows.length + 1;
             this.GUI.windowObj = {
                 closed: false,
                 header: "🌸 AimbaeShiro 🌸",
