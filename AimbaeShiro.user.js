@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.5.0
+// @version      1.5.1
 // @description    Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -49,6 +49,7 @@ window[cheatInstanceId] = function() {
             this.playerMaps = [];
             this.scale = 1;
             this.three = null;
+            this.weaponIconCache = {};
             this.notifyContainer = null;
 
             this.PLAYER_HEIGHT = 11;
@@ -81,6 +82,7 @@ window[cheatInstanceId] = function() {
                 espSquare: true,
                 espNameTags: true,
                 espWeaponIcons: true,
+                espInfoBackground: true,
                 espTeamCheck: true,
                 espBotCheck: true,
                 wireframeEnabled: false,
@@ -318,6 +320,7 @@ window[cheatInstanceId] = function() {
                     set(value) {
                         if(cheatInstance.three == null){
                             console.log("🌸 AimbaeShiro: THREE object captured!");
+                            console.log(cheatInstance);
                             cheatInstance.three = value;
                             cheatInstance.tempVector = new value.Vector3();
                             cheatInstance.cameraPos = new value.Vector3();
@@ -775,6 +778,7 @@ window[cheatInstanceId] = function() {
                 espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
                 nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
                 weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
+                espInfoBackground: '<rect x="3" y="6" width="18" height="12" rx="2"/>',
                 colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
                 wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
                 unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
@@ -804,6 +808,7 @@ window[cheatInstanceId] = function() {
                 espSquare: 'Draws a box around enemies.',
                 espNameTags: 'Shows player name, health, and current weapon.',
                 espWeaponIcons: 'Shows weapon icon/name in Full Info ESP.',
+                espInfoBackground: 'Displays a background panel for player name/weapon information.',
                 espColor: 'Color for ESP lines.',
                 boxColor: 'Color for ESP boxes and text.',
                 botColor: 'Special color for bot ESP.',
@@ -848,6 +853,7 @@ window[cheatInstanceId] = function() {
                          ${this.createMenuItemHTML('toggle','espSquare','Glowing Box ESP', neonIcons.espSquare, tooltips.espSquare)}
                          ${this.createMenuItemHTML('toggle','espNameTags','Full Info (Name/HP/Wpn)', neonIcons.nameTags, tooltips.espNameTags)}
                          ${this.createMenuItemHTML('toggle','espWeaponIcons','Show Weapon (in Full Info)', neonIcons.weaponIcons, tooltips.espWeaponIcons)}
+                         ${this.createMenuItemHTML('toggle','espInfoBackground','Info Panel Background', neonIcons.espInfoBackground, tooltips.espInfoBackground)}
                          ${this.createMenuItemHTML('color','espColor','Trail Color', neonIcons.colorPicker, tooltips.espColor)}
                          ${this.createMenuItemHTML('color','boxColor','Box & Info Color', neonIcons.colorPicker, tooltips.boxColor)}
                          ${this.createMenuItemHTML('color','botColor','Bot Color', neonIcons.botColor, tooltips.botColor)}
@@ -1144,14 +1150,16 @@ window[cheatInstanceId] = function() {
             if (this.settings.espTeamCheck && this.isTeam(player)) return;
 
             const playerPos = new this.three.Vector3(player.x, player.y, player.z);
-            const effectiveHeight = isBot ? player.dat.mSize /*player.height - ((- player.dat.mSize || 0) / this.BOT_CROUCH_FACTOR)*/ : (player.height || this.PLAYER_HEIGHT) - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
+            const effectiveHeight = isBot ? player.dat.mSize : (player.height || this.PLAYER_HEIGHT) - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
             const halfWidth = isBot ? (player.dat.mSize * 0.4) / 2 : this.PLAYER_WIDTH / 2;
+
             const corners = [
                 new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z - halfWidth),
                 new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z + halfWidth),
                 new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth),
                 new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth),
             ];
+
             let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity, onScreen = false;
             for (const corner of corners) {
                 const screenPos = this.world2Screen(corner);
@@ -1170,7 +1178,7 @@ window[cheatInstanceId] = function() {
                 const hexToRgba = (hex, alpha) => { let r=0,g=0,b=0; if (hex.length == 7) { r=parseInt(hex.slice(1,3),16); g=parseInt(hex.slice(3,5),16); b=parseInt(hex.slice(5,7),16); } return `rgba(${r},${g},${b},${alpha})`; };
                 const gradient = this.ctx.createLinearGradient(startX, startY, endX, endY);
                 gradient.addColorStop(0, hexToRgba(trailColor, 0.7)); gradient.addColorStop(1, hexToRgba(trailColor, 0));
-                this.ctx.lineWidth = 3; this.ctx.strokeStyle = gradient; this.ctx.shadowColor = trailColor; this.ctx.shadowBlur = 15;
+                this.ctx.lineWidth = 2.5; this.ctx.strokeStyle = gradient; this.ctx.shadowColor = trailColor; this.ctx.shadowBlur = 15;
                 CRC2d.beginPath.apply(this.ctx, []);
                 CRC2d.moveTo.apply(this.ctx, [startX, startY]);
                 CRC2d.lineTo.apply(this.ctx, [endX, endY]);
@@ -1178,52 +1186,109 @@ window[cheatInstanceId] = function() {
             }
 
             if (this.settings.espSquare) {
-                this.ctx.shadowColor = this.settings.boxColor; this.ctx.shadowBlur = 10; this.ctx.lineWidth = 2; this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
+                this.ctx.shadowColor = this.settings.boxColor; this.ctx.shadowBlur = 10; this.ctx.lineWidth = 1.5; this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
                 CRC2d.strokeRect.apply(this.ctx, [xmin, ymin, boxWidth, boxHeight]);
             }
 
-            if (this.settings.espNameTags) {
-                this.ctx.shadowBlur = 0;
+            if (player.health && player.maxHealth) {
+                const healthPercentage = Math.max(0, player.health / player.maxHealth);
+                const barX = xmin - 7;
+                const barY = ymin;
+                const barWidth = 4;
+                const barHeight = boxHeight;
 
-                if (player.health && player.maxHealth) {
-                    const healthPercentage = Math.max(0, player.health / player.maxHealth);
-                    this.ctx.fillStyle = "rgba(0,0,0,0.5)";
-                    CRC2d.fillRect.apply(this.ctx, [xmin-8, ymin, -6, boxHeight]);
-                    this.ctx.fillStyle = healthPercentage > 0.75 ? "#43A047" : healthPercentage > 0.4 ? "#FDD835" : "#E53935";
-                    CRC2d.fillRect.apply(this.ctx, [xmin-8, ymin + boxHeight * (1-healthPercentage), -6, boxHeight * healthPercentage]);
-                }
+                this.ctx.fillStyle = "rgba(0,0,0,0.5)";
+                CRC2d.fillRect.apply(this.ctx, [barX, barY, barWidth, barHeight]);
 
-                this.ctx.font = "bold 14px Rajdhani, sans-serif";
+                this.ctx.fillStyle = healthPercentage > 0.75 ? "#43A047" : healthPercentage > 0.4 ? "#FDD835" : "#E53935";
+                CRC2d.fillRect.apply(this.ctx, [barX, barY + barHeight * (1-healthPercentage), barWidth, barHeight * healthPercentage]);
+
+                const healthText = `♥ ${Math.round(player.health)}`;
+                this.ctx.font = "bold 11px Rajdhani, sans-serif";
+                this.ctx.textAlign = "right";
                 this.ctx.fillStyle = "#FFFFFF";
-                this.ctx.strokeStyle = "#000000"; this.ctx.lineWidth = 2.5; this.ctx.textAlign = "left";
+                this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
+                CRC2d.fillText.apply(this.ctx, [healthText, barX - 4, barY + 11]);
+            }
 
-                let textY = ymin + 1, lineSpacing = 16;
-                CRC2d.strokeText.apply(this.ctx, [player.name || 'Player', xmax + 5, textY]);
-                CRC2d.fillText.apply(this.ctx, [player.name || 'Player', xmax + 5, textY]);
-                textY += lineSpacing;
+            if (this.settings.espNameTags) {
+                this.ctx.font = "bold 11px Rajdhani, sans-serif";
+                this.ctx.textAlign = "left";
 
-                if (player.health) {
-                    const healthText = `♥ ${Math.round(player.health)}`;
-                    CRC2d.strokeText.apply(this.ctx, [healthText, xmax+5, textY]);
-                    CRC2d.fillText.apply(this.ctx, [healthText, xmax+5, textY]);
-                    textY += lineSpacing;
+                const padding = 4;
+                const iconHeight = 16;
+                const borderRadius = 4;
+                let iconWidth = 0;
+                const hasWeapon = player.weapon && player.weapon.name;
+
+                let weaponIcon = null;
+                if (hasWeapon && this.settings.espWeaponIcons && player.weapon.icon) {
+                    if (!this.weaponIconCache) this.weaponIconCache = {};
+                    if (!this.weaponIconCache[player.weapon.icon]) {
+                        this.weaponIconCache[player.weapon.icon] = new Image();
+                        this.weaponIconCache[player.weapon.icon].src = `https://assets.krunker.io/textures/weapons/${player.weapon.icon}.png`;
+                    }
+                    weaponIcon = this.weaponIconCache[player.weapon.icon];
+                    if (weaponIcon.complete && weaponIcon.naturalWidth > 0) {
+                        iconWidth = weaponIcon.width * (iconHeight / weaponIcon.height);
+                    }
                 }
 
-                if (player.weapon && this.settings.espWeaponIcons) {
-                    const weaponText = `❖ ${player.weapon.name}`;
-                    CRC2d.strokeText.apply(this.ctx, [weaponText, xmax + 5, textY]);
-                    CRC2d.fillText.apply(this.ctx, [weaponText, xmax + 5, textY]);
+                const namePart = isBot ? `[AI] ${player.name || 'Bot'}` : player.level ? `[LVL ${player.level}] ${player.name || 'Player'}` : `${player.name || 'Player'}`;
+                const weaponPart = hasWeapon ? ` • ${player.weapon.name}` : '';
+                const fullText = namePart + weaponPart;
+                const fullTextWidth = this.ctx.measureText(fullText).width;
+
+                const infoBoxWidth = fullTextWidth + (iconWidth > 0 ? iconWidth + padding : 0) + padding * 2;
+                const infoBoxHeight = 20;
+                const infoBoxX = (xmin + boxWidth / 2) - (infoBoxWidth / 2);
+                const infoBoxY = ymin - infoBoxHeight - 5;
+
+                if (this.settings.espInfoBackground) {
+                    this.ctx.fillStyle = "rgba(25, 10, 30, 0.55)";
+                    this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
+                    this.ctx.lineWidth = 1;
+                    this.ctx.shadowColor = isBot ? this.settings.botColor : this.settings.boxColor;
+                    this.ctx.shadowBlur = 6;
+                    CRC2d.beginPath.apply(this.ctx, []);
+                    CRC2d.moveTo.apply(this.ctx, [infoBoxX + borderRadius, infoBoxY]);
+                    CRC2d.lineTo.apply(this.ctx, [infoBoxX + infoBoxWidth - borderRadius, infoBoxY]);
+                    CRC2d.arcTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY, infoBoxX + infoBoxWidth, infoBoxY + borderRadius, borderRadius]);
+                    CRC2d.lineTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY + infoBoxHeight - borderRadius]);
+                    CRC2d.arcTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY + infoBoxHeight, infoBoxX + infoBoxWidth - borderRadius, infoBoxY + infoBoxHeight, borderRadius]);
+                    CRC2d.lineTo.apply(this.ctx, [infoBoxX + borderRadius, infoBoxY + infoBoxHeight]);
+                    CRC2d.arcTo.apply(this.ctx, [infoBoxX, infoBoxY + infoBoxHeight, infoBoxX, infoBoxY + infoBoxHeight - borderRadius, borderRadius]);
+                    CRC2d.lineTo.apply(this.ctx, [infoBoxX, infoBoxY + borderRadius]);
+                    CRC2d.arcTo.apply(this.ctx, [infoBoxX, infoBoxY, infoBoxX + borderRadius, infoBoxY, borderRadius]);
+                    CRC2d.closePath.apply(this.ctx, []);
+                    CRC2d.fill.apply(this.ctx, []);
+                    CRC2d.stroke.apply(this.ctx, []);
                 }
+
+                this.ctx.fillStyle = "#FFFFFF";
+                if (this.settings.espInfoBackground) {
+                    this.ctx.shadowColor = '#ff008080';
+                    this.ctx.shadowBlur = 4;
+                } else {
+                    this.ctx.shadowColor = '#000000';
+                    this.ctx.shadowBlur = 5;
+                }
+                CRC2d.fillText.apply(this.ctx, [fullText, infoBoxX + padding, infoBoxY + infoBoxHeight / 2 + 4]);
+
+                if (weaponIcon && weaponIcon.complete && iconWidth > 0) {
+                    const iconX = infoBoxX + padding + fullTextWidth + padding;
+                    const iconY = infoBoxY + (infoBoxHeight - iconHeight) / 2;
+                    this.ctx.drawImage(weaponIcon, iconX, iconY, iconWidth, iconHeight);
+                }
+                this.ctx.shadowBlur = 0;
 
                 const distance = Math.round(this.getDistance(this.me, player) / 10);
                 const distanceText = `[${distance}m]`;
-                const distanceTextX = xmin + boxWidth / 2;
-                const distanceTextY = ymax + lineSpacing;
                 this.ctx.textAlign = "center";
-                CRC2d.strokeText.apply(this.ctx, [distanceText, distanceTextX, distanceTextY]);
-                CRC2d.fillText.apply(this.ctx, [distanceText, distanceTextX, distanceTextY]);
+                this.ctx.fillStyle = "#FFFFFF";
+                this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
+                CRC2d.fillText.apply(this.ctx, [distanceText, xmin + boxWidth / 2, ymax + 14]);
             }
-
             CRC2d.restore.apply(this.ctx, []);
         }
     }
