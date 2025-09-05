@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.5.1
+// @version      1.5.2
 // @description    Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -1319,9 +1319,12 @@ const observer = new MutationObserver(function (mutations) {
             for (const node of mutation.addedNodes) {
                 if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
                     node.remove(); observer.disconnect();
-                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
-                    if (modifiedGameScript) { window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
-                                            } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
+                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`)
+                    .replace(/if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, '/* Anticheat Removed By Anonimbiri */')
+                    .replace(/for\s*\(var.*?windows\.length.*?\)\s*\{[\s\S]*?\}/, '/* Anticheat Removed By Anonimbiri */');
+                    if (modifiedGameScript) {
+                        window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
+                    } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
                     return;
                 }
             }
