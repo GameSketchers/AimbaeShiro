@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.5.2
+// @version      1.5.3
 // @description    Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -25,625 +25,680 @@
 // @noframes
 // ==/UserScript==
 
-const cheatInstanceId = '_' + Math.random().toString(36).slice(2);
+class AimbaeShiro {
+    constructor() {
+        console.log("🌸 AimbaeShiro: Initializing...");
+        this.uniqueId = 'shiro_' + Math.random().toString(36).substring(2, 10);
+        window[this.uniqueId] = this;
 
-window[cheatInstanceId] = function() {
-    'use strict';
-    delete window[cheatInstanceId];
+        this.GUI = {};
+        this.game = null;
+        this.me = null;
+        this.renderer = null;
+        this.controls = null;
+        this.overlay = null;
+        this.ctx = null;
+        this.socket = null;
+        this.skins = null;
+        this.playerMaps = [];
+        this.scale = 1;
+        this.three = null;
+        this.vars = {};
+        this.exports = null;
+        this.gameJS = '';
+        this.weaponIconCache = {};
+        this.notifyContainer = null;
 
-    class AimbaeShiro {
-        constructor() {
-            console.log("🌸 AimbaeShiro: Initializing...");
-            this.uniqueId = 'shiro_' + Math.random().toString(36).substring(2, 10);
-            window[this.uniqueId] = this;
+        this.PLAYER_HEIGHT = 11;
+        this.PLAYER_WIDTH = 4;
+        this.CROUCH_FACTOR = 3;
+        this.BOT_CROUCH_FACTOR = 2;
+        this.CAMERA_HEIGHT = 1.5;
 
-            this.GUI = {};
-            this.game = null;
-            this.me = null;
-            this.renderer = null;
-            this.controls = null;
-            this.overlay = null;
-            this.ctx = null;
-            this.socket = null;
-            this.skins = null;
-            this.playerMaps = [];
-            this.scale = 1;
-            this.three = null;
-            this.weaponIconCache = {};
-            this.notifyContainer = null;
+        this.tempVector = null;
+        this.cameraPos = null;
 
-            this.PLAYER_HEIGHT = 11;
-            this.PLAYER_WIDTH = 4;
-            this.CROUCH_FACTOR = 3;
-            this.BOT_CROUCH_FACTOR = 2;
-            this.CAMERA_HEIGHT = 1.5;
+        this.isProxy = Symbol('isProxy');
+        this.rightMouseDown = false;
+        this.isBindingHotkey = false;
+        this.currentBindingSetting = null;
+        this.pressedKeys = new Set();
 
-            this.tempVector = null;
-            this.cameraPos = null;
+        this.defaultSettings = {
+            aimbotEnabled: true,
+            aimbotOnRightMouse: false,
+            aimbotWallCheck: true,
+            aimbotWallBangs: false,
+            aimbotTeamCheck: true,
+            aimbotBotCheck: true,
+            autoFireEnabled: false,
+            fovSize: 90,
+            aimOffset: 0,
+            drawFovCircle: true,
+            espLines: true,
+            espSquare: true,
+            espNameTags: true,
+            espWeaponIcons: true,
+            espInfoBackground: true,
+            espTeamCheck: true,
+            espBotCheck: true,
+            wireframeEnabled: false,
+            unlockSkins: true,
+            bhopEnabled: false,
+            espColor: "#ff0080",
+            boxColor: "#ff0080",
+            botColor: "#00ff80",
+            menuTopPx: null,
+            menuLeftPx: null,
+            autoNuke: false,
+            antikick: true,
+            autoReload: true,
+        };
+        this.defaultHotkeys = {
+            toggleMenu: 'F2',
+            aimbotEnabled: 'F3',
+            espLines: 'F4',
+            espSquare: 'F6',
+            wireframeEnabled: 'F7',
+            bhopEnabled: 'F8',
+            autoFireEnabled: 'F9',
+            aimbotWallCheck: 'F10',
+            aimbotWallBangs: 'Insert',
+            aimbotTeamCheck: 'F11',
+            espTeamCheck: 'F12',
+            espNameTags: 'Numpad1',
+            espWeaponIcons: 'Numpad2',
+            unlockSkins: 'Numpad3',
+            aimbotBotCheck: 'Numpad4',
+            espBotCheck: 'Numpad5',
+        };
+        this.settings = {};
+        this.hotkeys = {};
 
-            this.isProxy = Symbol('isProxy');
-            this.rightMouseDown = false;
-            this.isBindingHotkey = false;
-            this.currentBindingSetting = null;
-            this.pressedKeys = new Set();
-
-            this.defaultSettings = {
-                aimbotEnabled: true,
-                aimbotOnRightMouse: false,
-                aimbotWallCheck: true,
-                aimbotWallBangs: false,
-                aimbotTeamCheck: true,
-                aimbotBotCheck: true,
-                autoFireEnabled: false,
-                fovSize: 90,
-                aimOffset: 0,
-                drawFovCircle: true,
-                espLines: true,
-                espSquare: true,
-                espNameTags: true,
-                espWeaponIcons: true,
-                espInfoBackground: true,
-                espTeamCheck: true,
-                espBotCheck: true,
-                wireframeEnabled: false,
-                unlockSkins: true,
-                bhopEnabled: false,
-                espColor: "#ff0080",
-                boxColor: "#ff0080",
-                botColor: "#00ff80",
-                menuTopPx: null,
-                menuLeftPx: null,
-                autoNuke: false,
-                antikick: true,
-                autoReload: true,
-            };
-            this.defaultHotkeys = {
-                toggleMenu: 'F2',
-                aimbotEnabled: 'F3',
-                espLines: 'F4',
-                espSquare: 'F6',
-                wireframeEnabled: 'F7',
-                bhopEnabled: 'F8',
-                autoFireEnabled: 'F9',
-                aimbotWallCheck: 'F10',
-                aimbotWallBangs: 'Insert',
-                aimbotTeamCheck: 'F11',
-                espTeamCheck: 'F12',
-                espNameTags: 'Numpad1',
-                espWeaponIcons: 'Numpad2',
-                unlockSkins: 'Numpad3',
-                aimbotBotCheck: 'Numpad4',
-                espBotCheck: 'Numpad5',
-            };
-            this.settings = {};
-            this.hotkeys = {};
-
-            try {
-                this.loadSettings();
-                this.initializeNotifierContainer();
-                this.checkForUpdates();
-                this.initializeGameHooks();
-                this.waitFor(() => window.windows).then(() => {
-                    this.initGameGUI();
-                });
-                this.addEventListeners();
-                console.log("🌸 AimbaeShiro: Successfully Initialized!");
-            } catch (error)
-            {
-                console.error('🌸 AimbaeShiro: FATAL ERROR during initialization.', error);
-            }
+        try {
+            this.loadSettings();
+            this.initializeNotifierContainer();
+            this.checkForUpdates();
+            this.initializeLoader();
+            this.initializeGameHooks();
+            this.waitFor(() => window.windows).then(() => {
+                this.initGameGUI();
+            });
+            this.addEventListeners();
+            console.log("🌸 AimbaeShiro: Successfully Initialized!");
+        } catch (error)
+        {
+            console.error('🌸 AimbaeShiro: FATAL ERROR during initialization.', error);
         }
+    }
 
-        loadSettings() {
-            let loadedSettings = {}, loadedHotkeys = {};
+    loadSettings() {
+        let loadedSettings = {}, loadedHotkeys = {};
+        try {
+            loadedSettings = JSON.parse(window.localStorage.getItem('aimbaeshiro_settings'));
+            loadedHotkeys = JSON.parse(window.localStorage.getItem('aimbaeshiro_hotkeys'));
+        } catch (e) {
+            console.warn("🌸 AimbaeShiro: Could not parse settings, using defaults.");
+        }
+        this.settings = { ...this.defaultSettings, ...loadedSettings };
+        this.hotkeys = { ...this.defaultHotkeys, ...loadedHotkeys };
+    }
+
+    saveSettings(key, value) {
+        try {
+            window.localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.error("🌸 AimbaeShiro: Could not save settings.", e);
+        }
+    }
+
+    async checkForUpdates() {
+        const current = GM_info.script.version || '0.0.0';
+
+        const getLatestFromGitHub = async () => {
             try {
-                loadedSettings = JSON.parse(window.localStorage.getItem('aimbaeshiro_settings'));
-                loadedHotkeys = JSON.parse(window.localStorage.getItem('aimbaeshiro_hotkeys'));
+                const res = await fetch('https://api.github.com/repos/GameSketchers/AimbaeShiro/releases/latest', { cache: 'no-store' });
+                if (!res.ok) throw new Error('GitHub latest failed');
+                const json = await res.json();
+                const latestTag = (json && (json.tag_name || json.name)) ? (json.tag_name || '').toString().trim() : '';
+                const assetUrl = (json.assets && json.assets[0] && json.assets[0].browser_download_url) ? json.assets[0].browser_download_url : null;
+                const version = latestTag.replace(/^v/i, '').trim();
+                return { version, downloadUrl: assetUrl, source: 'github' };
             } catch (e) {
-                console.warn("🌸 AimbaeShiro: Could not parse settings, using defaults.");
+                return null;
             }
-            this.settings = { ...this.defaultSettings, ...loadedSettings };
-            this.hotkeys = { ...this.defaultHotkeys, ...loadedHotkeys };
-        }
+        };
 
-        saveSettings(key, value) {
+        const getLatestFromGreasyFork = async () => {
             try {
-                window.localStorage.setItem(key, JSON.stringify(value));
+                const res = await fetch('https://api.greasyfork.org/en/scripts/538607.json', { cache: 'no-store' });
+                if (!res.ok) throw new Error('GF latest failed');
+                const json = await res.json();
+                const version = (json && json.version) ? json.version : null;
+                const code_url = (json && json.code_url) ? json.code_url : null;
+                return { version, downloadUrl: code_url, source: 'greasyfork' };
             } catch (e) {
-                console.error("🌸 AimbaeShiro: Could not save settings.", e);
+                return null;
             }
+        };
+
+        const latestGh = await getLatestFromGitHub();
+        const latest = latestGh || await getLatestFromGreasyFork();
+
+        if (!latest || !latest.version) return;
+
+        const cmp = this.compareVersionStrings(current, latest.version);
+        if (cmp < 0) {
+            const url = latest.downloadUrl || 'https://greasyfork.org/en/scripts/538607-aimbaeshiro-krunker-io-cheat';
+            this.notify({
+                title: 'New version available',
+                message: `Current: ${current} → Latest: ${latest.version}`,
+                actionText: 'Update',
+                onAction: () => {
+                    try { window.open(url, '_blank', 'noopener'); } catch (e) { location.href = url; }
+                },
+                timeout: 0
+            });
+        }
+    }
+
+    compareVersionStrings(a, b) {
+        const na = String(a || '').replace(/^v/i, '').split('.').map(x => parseInt(x, 10) || 0);
+        const nb = String(b || '').replace(/^v/i, '').split('.').map(x => parseInt(x, 10) || 0);
+        const len = Math.max(na.length, nb.length);
+        for (let i = 0; i < len; i++) {
+            const da = na[i] || 0, db = nb[i] || 0;
+            if (da > db) return 1;
+            if (da < db) return -1;
+        }
+        return 0;
+    }
+
+    initializeNotifierContainer() {
+        let container = document.getElementById('anonimbiri-notify-wrap');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'anonimbiri-notify-wrap';
+            document.documentElement.appendChild(container);
+        }
+        this.notifyContainer = container;
+    }
+
+    notify({ title = 'Notification', message = '', actionText, onAction, timeout = 6000 } = {}) {
+        if (!this.notifyContainer) {
+            console.error("🌸 AimbaeShiro: Notifier container not initialized.");
+            return;
         }
 
-        async checkForUpdates() {
-            const current = GM_info.script.version || '0.0.0';
+        const card = document.createElement('div');
+        card.className = 'anonimbiri-notify-card';
 
-            const getLatestFromGitHub = async () => {
-                try {
-                    const res = await fetch('https://api.github.com/repos/GameSketchers/AimbaeShiro/releases/latest', { cache: 'no-store' });
-                    if (!res.ok) throw new Error('GitHub latest failed');
-                    const json = await res.json();
-                    const latestTag = (json && (json.tag_name || json.name)) ? (json.tag_name || '').toString().trim() : '';
-                    const assetUrl = (json.assets && json.assets[0] && json.assets[0].browser_download_url) ? json.assets[0].browser_download_url : null;
-                    const version = latestTag.replace(/^v/i, '').trim();
-                    return { version, downloadUrl: assetUrl, source: 'github' };
-                } catch (e) {
-                    return null;
+        setTimeout(() => card.classList.add('visible'), 10);
+
+        const content = document.createElement('div');
+        content.className = 'anonimbiri-notify-content';
+
+        const logo = document.createElement('div');
+        logo.className = 'anonimbiri-notify-logo';
+
+        const texts = document.createElement('div');
+        texts.className = 'anonimbiri-notify-texts';
+
+        const titleEl = document.createElement('label');
+        titleEl.className = 'anonimbiri-notify-title';
+        titleEl.textContent = title;
+
+        const messageEl = document.createElement('div');
+        messageEl.className = 'anonimbiri-notify-message';
+        messageEl.textContent = message;
+
+        texts.append(titleEl, messageEl);
+        content.append(logo, texts);
+
+        const controls = document.createElement('div');
+        controls.className = 'anonimbiri-notify-controls';
+
+        if (actionText && typeof onAction === 'function') {
+            const btn = document.createElement('div');
+            btn.className = 'anonimbiri-notify-action-btn';
+            btn.textContent = actionText;
+            btn.addEventListener('click', (e) => { e.stopPropagation(); onAction(); dismiss(); });
+            controls.appendChild(btn);
+        }
+
+        card.append(content, controls);
+        this.notifyContainer.appendChild(card);
+
+        let hideTimer;
+        if (timeout > 0) hideTimer = setTimeout(dismiss, timeout);
+
+        function dismiss() {
+            clearTimeout(hideTimer);
+            card.classList.remove('visible');
+            setTimeout(() => card.remove(), 350);
+        }
+
+        return { dismiss };
+    }
+
+    initializeLoader() {
+        let tokenPromiseResolve;
+        const tokenPromise = new Promise((resolve) => (tokenPromiseResolve = resolve));
+        const ifr = document.createElement('iframe');
+        ifr.src = location.origin + '/' + (window.location.search ? window.location.search : '');
+        ifr.style.display = 'none';
+        document.documentElement.append(ifr);
+        ifr.contentWindow.fetch=new Proxy(ifr.contentWindow.fetch,{apply(t,a,[u,...r]){if(typeof u==="string"&&u.includes("/seek-game")){ifr.remove();tokenPromiseResolve(u);return;}return Reflect.apply(t,a,[u,...r]);}});
+        window.fetch=new Proxy(window.fetch,{apply:async(t,a,[u,...r])=>{if(typeof u==="string"&&u.includes("/seek-game"))u=await tokenPromise;return Reflect.apply(t,a,[u,...r]);}});
+        function downloadFileSync(url) { var req = new XMLHttpRequest(); req.open('GET', url, false); req.send(); if (req.status === 200) { return req.response; } return null; }
+        const observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                for (const node of mutation.addedNodes) {
+                    if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
+                        node.remove(); observer.disconnect();
+                        this.gameJS = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
+                        const patchedScript = this.patchGameScript(this.gameJS);
+                        window.addEventListener('load', () => { Function(patchedScript)(); });
+                        return;
+                    }
                 }
-            };
+            }
+        });
+        observer.observe(document, { childList: true, subtree: true });
+    }
 
-            const getLatestFromGreasyFork = async () => {
-                try {
-                    const res = await fetch('https://api.greasyfork.org/en/scripts/538607.json', { cache: 'no-store' });
-                    if (!res.ok) throw new Error('GF latest failed');
-                    const json = await res.json();
-                    const version = (json && json.version) ? json.version : null;
-                    const code_url = (json && json.code_url) ? json.code_url : null;
-                    return { version, downloadUrl: code_url, source: 'greasyfork' };
-                } catch (e) {
-                    return null;
+    patchGameScript(script) {
+        const entries = {
+            pchObjc: { regex: /this\.([^\s=]+)\s*=\s*new\s+[^\s]+\.Object3D\(\)/u, index: 1 },
+            respawnT: { regex: /(:\s*)\(parseFloat\([^)]+\)\s*\|\|\s*0\)\s*\*\s*1000/g, patch: `$10` },
+            anticheat1: { regex: /if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
+            anticheat2: { regex: /for\s*\(var.*?windows\.length.*?\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
+            commandline: { regex: /Object\.defineProperty\(console,\s*['_"]_commandLineAPI['_"][\s\S]*?}\);?/g, patch: "/* Antidebug removed by anonimbiri */" },
+            error: { regex: /throw new Error/g, patch: "console.error" },
+        };
+
+        for (const name in entries) {
+            const object = entries[name];
+            const found = object.regex.exec(script);
+            if (object.hasOwnProperty('index')) {
+                if (!found) {
+                    console.warn(`🌸 AimbaeShiro: Failed to Find '${name}'`);
+                    this.vars[name] = null;
+                } else {
+                    this.vars[name] = found[object.index];
+                    console.log(`🌸 AimbaeShiro: Found '${name}': ${this.vars[name]}`);
                 }
-            };
-
-            const latestGh = await getLatestFromGitHub();
-            const latest = latestGh || await getLatestFromGreasyFork();
-
-            if (!latest || !latest.version) return;
-
-            const cmp = this.compareVersionStrings(current, latest.version);
-            if (cmp < 0) {
-                const url = latest.downloadUrl || 'https://greasyfork.org/en/scripts/538607-aimbaeshiro-krunker-io-cheat';
-                this.notify({
-                    title: 'New version available',
-                    message: `Current: ${current} → Latest: ${latest.version}`,
-                    actionText: 'Update',
-                    onAction: () => {
-                        try { window.open(url, '_blank', 'noopener'); } catch (e) { location.href = url; }
-                    },
-                    timeout: 0
-                });
+            } else if (found) {
+                script = script.replace(object.regex, object.patch);
+                console.log(`🌸 AimbaeShiro: Patched '${name}'`);
+            } else {
+                console.warn(`🌸 AimbaeShiro: Failed to Patch '${name}'`);
             }
         }
+        return script;
+    }
 
-        compareVersionStrings(a, b) {
-            const na = String(a || '').replace(/^v/i, '').split('.').map(x => parseInt(x, 10) || 0);
-            const nb = String(b || '').replace(/^v/i, '').split('.').map(x => parseInt(x, 10) || 0);
-            const len = Math.max(na.length, nb.length);
-            for (let i = 0; i < len; i++) {
-                const da = na[i] || 0, db = nb[i] || 0;
-                if (da > db) return 1;
-                if (da < db) return -1;
-            }
-            return 0;
-        }
+    initializeGameHooks() {
+        const cheatInstance = this;
+        const originalSkinsSymbol = Symbol('origSkins');
+        const localSkinsSymbol = Symbol('localSkins');
 
-        initializeNotifierContainer() {
-            let container = document.getElementById('anonimbiri-notify-wrap');
-            if (!container) {
-                container = document.createElement('div');
-                container.id = 'anonimbiri-notify-wrap';
-                document.documentElement.appendChild(container);
-            }
-            this.notifyContainer = container;
-        }
-
-        notify({ title = 'Notification', message = '', actionText, onAction, timeout = 6000 } = {}) {
-            if (!this.notifyContainer) {
-                console.error("🌸 AimbaeShiro: Notifier container not initialized.");
-                return;
-            }
-
-            const card = document.createElement('div');
-            card.className = 'anonimbiri-notify-card';
-
-            setTimeout(() => card.classList.add('visible'), 10);
-
-            const content = document.createElement('div');
-            content.className = 'anonimbiri-notify-content';
-
-            const logo = document.createElement('div');
-            logo.className = 'anonimbiri-notify-logo';
-
-            const texts = document.createElement('div');
-            texts.className = 'anonimbiri-notify-texts';
-
-            const titleEl = document.createElement('label');
-            titleEl.className = 'anonimbiri-notify-title';
-            titleEl.textContent = title;
-
-            const messageEl = document.createElement('div');
-            messageEl.className = 'anonimbiri-notify-message';
-            messageEl.textContent = message;
-
-            texts.append(titleEl, messageEl);
-            content.append(logo, texts);
-
-            const controls = document.createElement('div');
-            controls.className = 'anonimbiri-notify-controls';
-
-            if (actionText && typeof onAction === 'function') {
-                const btn = document.createElement('div');
-                btn.className = 'anonimbiri-notify-action-btn';
-                btn.textContent = actionText;
-                btn.addEventListener('click', (e) => { e.stopPropagation(); onAction(); dismiss(); });
-                controls.appendChild(btn);
-            }
-
-            card.append(content, controls);
-            this.notifyContainer.appendChild(card);
-
-            let hideTimer;
-            if (timeout > 0) hideTimer = setTimeout(dismiss, timeout);
-
-            function dismiss() {
-                clearTimeout(hideTimer);
-                card.classList.remove('visible');
-                setTimeout(() => card.remove(), 350);
-            }
-
-            return { dismiss };
-        }
-
-        initializeGameHooks() {
-            const cheatInstance = this;
-            const originalSkinsSymbol = Symbol('origSkins');
-            const localSkinsSymbol = Symbol('localSkins');
-
-            Object.defineProperties(Object.prototype, {
-                canvas: {
-                    set(canvasValue) {
-                        this['_canvas'] = canvasValue;
-                        if (canvasValue && canvasValue.id === 'game-overlay') {
-                            cheatInstance.overlay = this;
-                            cheatInstance.ctx = canvasValue.getContext('2d');
-                            Object.defineProperty(this, 'render', {
-                                set(originalRender) {
-                                    this['_render'] = new Proxy(originalRender, {
-                                        apply(target, thisArg, args) {
-                                            ['scale', 'game', 'controls', 'renderer', 'me'].forEach((prop, i) => {
-                                                cheatInstance[prop] = args[i];
-                                            });
-                                            Reflect.apply(...arguments);
-                                            if (cheatInstance.me && cheatInstance.ctx) {
-                                                cheatInstance.onRenderFrame();
-                                            }
-                                        },
-                                    });
-                                },
-                                get() { return this['_render']; },
-                            });
-                        }
-                    },
-                    get() { return this['_canvas']; },
-                },
-                THREE: {
-                    configurable: true,
-                    set(value) {
-                        if(cheatInstance.three == null){
-                            console.log("🌸 AimbaeShiro: THREE object captured!");
-                            cheatInstance.three = value;
-                            cheatInstance.tempVector = new value.Vector3();
-                            cheatInstance.cameraPos = new value.Vector3();
-                            cheatInstance.rayC = new value.Raycaster();
-                            cheatInstance.vec2 = new value.Vector2(0, 0);
-                        }
-                        this['_value'] = value;
-                    },
-                    get() { return this['_value']; },
-                },
-                skins: {
-                    set(skinsArray) {
-                        this[originalSkinsSymbol] = skinsArray;
-                        if (!this[localSkinsSymbol]) {
-                            this[localSkinsSymbol] = Array.apply(null, Array(5e3)).map((_, i) => { return { ind: i, cnt: 0x1, }});
-                        }
-                        return skinsArray;
-                    },
-                    get() {
-                        return cheatInstance.settings.unlockSkins && this.stats ? this[localSkinsSymbol] : this[originalSkinsSymbol];
-                    },
-                },
-                events: {
-                    configurable: true,
-                    set(eventEmitter) {
-                        this['_events'] = eventEmitter;
-                        if (this.ahNum === 0) {
-                            cheatInstance.socket = this;
-                            cheatInstance.wsEvent = this._dispatchEvent.bind(this);
-                            cheatInstance.wsSend = this.send.bind(this);
-                            this.send = new Proxy(this.send, {
-                                apply(target, thisArg, [type, ...message]) {
-                                    if (type=="ah2") return;
-                                    let data = message[0];
-                                    if (type === 'en' && data) {
-                                        cheatInstance.skins = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17] };
-                                    }
-                                    if(type === 'spry' && data){
-                                        console.log(data);
-                                        cheatInstance.spray = data;
-                                        message[0] = 4577;
-                                    }
-                                    return target.apply(thisArg, [type, ...message]);
-                                }
-                            });
-
-                            this._dispatchEvent = new Proxy(this._dispatchEvent, {
-                                apply(target, thisArg, [eventName, ...eventData]) {
-                                    if (eventName === 'error' && eventData[0][0].includes('Connection Banned')) {
-                                        localStorage.removeItem('krunker_token');
-                                        cheatInstance.notify({
-                                            title: 'Banned',
-                                            message: 'Due to a ban, you have been signed out.\nPlease connect to the game with a VPN.',
-                                            timeout: 5000
+        Object.defineProperties(Object.prototype, {
+            canvas: {
+                set(canvasValue) {
+                    this['_canvas'] = canvasValue;
+                    if (canvasValue && canvasValue.id === 'game-overlay') {
+                        cheatInstance.overlay = this;
+                        cheatInstance.ctx = canvasValue.getContext('2d');
+                        Object.defineProperty(this, 'render', {
+                            set(originalRender) {
+                                this['_render'] = new Proxy(originalRender, {
+                                    apply(target, thisArg, args) {
+                                        ['scale', 'game', 'controls', 'renderer', 'me'].forEach((prop, i) => {
+                                            cheatInstance[prop] = args[i];
                                         });
-                                        console.log('🌸 AimbaeShiro: Due to a ban, you have been signed out, Please connect to the game with a VPN.');
-                                    }
-                                    if (cheatInstance.settings.unlockSkins && eventName === '0') {
-                                        let playerData = eventData[0][0];
-                                        let playerStride = 38;
-                                        while (playerData.length % playerStride !== 0) playerStride++;
-                                        for (let i = 0; i < playerData.length; i += playerStride) {
-                                            if (playerData[i] === cheatInstance.socket.socketId || 0) {
-                                                playerData[i + 12] = [cheatInstance.skins.main, cheatInstance.skins.secondary];
-                                                playerData[i + 13] = cheatInstance.skins.hat;
-                                                playerData[i + 14] = cheatInstance.skins.body;
-                                                playerData[i + 19] = cheatInstance.skins.knife;
-                                                playerData[i + 24] = cheatInstance.skins.dye;
-                                                playerData[i + 33] = cheatInstance.skins.waist;
-                                            }
+                                        Reflect.apply(...arguments);
+                                        if (cheatInstance.me && cheatInstance.ctx) {
+                                            cheatInstance.onRenderFrame();
+                                        }
+                                    },
+                                });
+                            },
+                            get() { return this['_render']; },
+                        });
+                    }
+                },
+                get() { return this['_canvas']; },
+            },
+            THREE: {
+                configurable: true,
+                set(value) {
+                    if(cheatInstance.three == null){
+                        console.log("🌸 AimbaeShiro: THREE object captured!");
+                        cheatInstance.three = value;
+                        cheatInstance.tempVector = new value.Vector3();
+                        cheatInstance.cameraPos = new value.Vector3();
+                        cheatInstance.rayC = new value.Raycaster();
+                        cheatInstance.vec2 = new value.Vector2(0, 0);
+                    }
+                    this['_value'] = value;
+                },
+                get() { return this['_value']; },
+            },
+            skins: {
+                set(skinsArray) {
+                    this[originalSkinsSymbol] = skinsArray;
+                    if (!this[localSkinsSymbol]) {
+                        this[localSkinsSymbol] = Array.apply(null, Array(5e3)).map((_, i) => { return { ind: i, cnt: 0x1, }});
+                    }
+                    return skinsArray;
+                },
+                get() {
+                    return cheatInstance.settings.unlockSkins && this.stats ? this[localSkinsSymbol] : this[originalSkinsSymbol];
+                },
+            },
+            events: {
+                configurable: true,
+                set(eventEmitter) {
+                    this['_events'] = eventEmitter;
+                    if (this.ahNum === 0) {
+                        cheatInstance.socket = this;
+                        cheatInstance.wsEvent = this._dispatchEvent.bind(this);
+                        cheatInstance.wsSend = this.send.bind(this);
+                        this.send = new Proxy(this.send, {
+                            apply(target, thisArg, [type, ...message]) {
+                                if (type=="ah2") return;
+                                let data = message[0];
+                                if (type === 'en' && data) {
+                                    cheatInstance.skins = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17] };
+                                }
+                                if(type === 'spry' && data){
+                                    console.log(data);
+                                    cheatInstance.spray = data;
+                                    message[0] = 4577;
+                                }
+                                return target.apply(thisArg, [type, ...message]);
+                            }
+                        });
+
+                        this._dispatchEvent = new Proxy(this._dispatchEvent, {
+                            apply(target, thisArg, [eventName, ...eventData]) {
+                                if (eventName === 'error' && eventData[0][0].includes('Connection Banned')) {
+                                    localStorage.removeItem('krunker_token');
+                                    cheatInstance.notify({
+                                        title: 'Banned',
+                                        message: 'Due to a ban, you have been signed out.\nPlease connect to the game with a VPN.',
+                                        timeout: 5000
+                                    });
+                                    console.log('🌸 AimbaeShiro: Due to a ban, you have been signed out, Please connect to the game with a VPN.');
+                                }
+                                if (cheatInstance.settings.unlockSkins && eventName === '0') {
+                                    let playerData = eventData[0][0];
+                                    let playerStride = 38;
+                                    while (playerData.length % playerStride !== 0) playerStride++;
+                                    for (let i = 0; i < playerData.length; i += playerStride) {
+                                        if (playerData[i] === cheatInstance.socket.socketId || 0) {
+                                            playerData[i + 12] = [cheatInstance.skins.main, cheatInstance.skins.secondary];
+                                            playerData[i + 13] = cheatInstance.skins.hat;
+                                            playerData[i + 14] = cheatInstance.skins.body;
+                                            playerData[i + 19] = cheatInstance.skins.knife;
+                                            playerData[i + 24] = cheatInstance.skins.dye;
+                                            playerData[i + 33] = cheatInstance.skins.waist;
                                         }
                                     }
-                                    if (cheatInstance.settings.unlockSkins && eventName === 'sp') {
-                                        eventData[0][1] = cheatInstance.spray;
-                                    }
-                                    return target.apply(thisArg, [eventName, ...eventData]);
                                 }
-                            });
-                        }
-                    },
-                    get() { return this['_events']; },
+                                if (cheatInstance.settings.unlockSkins && eventName === 'sp') {
+                                    eventData[0][1] = cheatInstance.spray;
+                                }
+                                return target.apply(thisArg, [eventName, ...eventData]);
+                            }
+                        });
+                    }
                 },
-                premiumT: {
-                    set(value) { return value; },
-                    get() { return cheatInstance.settings.unlockSkins; }
+                get() { return this['_events']; },
+            },
+            premiumT: {
+                set(value) { return value; },
+                get() { return cheatInstance.settings.unlockSkins; }
+            },
+            idleTimer: {
+                enumerable: false,
+                get() { return cheatInstance.settings.antikick ? 0 : this['_idleTimer']; },
+                set(value) { this['_idleTimer'] = value; },
+            },
+            kickTimer: {
+                enumerable: false,
+                get() { return cheatInstance.settings.antikick ? Infinity : this['_kickTimer']; },
+                set(value) { this['_kickTimer'] = value; },
+            },
+            cnBSeen: {
+                set(value) { this.inView = value; },
+                get() {
+                    const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team);
+                    return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inView;
                 },
-                idleTimer: {
-                    enumerable: false,
-                    get() { return cheatInstance.settings.antikick ? 0 : this['_idleTimer']; },
-                    set(value) { this['_idleTimer'] = value; },
+            },
+            canBSeen: {
+                set(value) { this.inViewBot = value; },
+                get() {
+                    const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team);
+                    return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inViewBot;
                 },
-                kickTimer: {
-                    enumerable: false,
-                    get() { return cheatInstance.settings.antikick ? Infinity : this['_kickTimer']; },
-                    set(value) { this['_kickTimer'] = value; },
+            },
+        });
+    }
+
+    onRenderFrame() {
+        if (!this.three || !this.renderer?.camera || !this.me) return;
+
+        if (this.me.procInputs && !this.me.procInputs[this.isProxy]) {
+            const originalProcInputs = this.me.procInputs;
+            this.me.procInputs = new Proxy(originalProcInputs, {
+                apply: (target, thisArg, args) => {
+                    if (thisArg) {
+                        this.onProcessInputs(args[0], thisArg);
+                    }
+                    return Reflect.apply(target, thisArg, args);
                 },
-                cnBSeen: {
-                    set(value) { this.inView = value; },
-                    get() {
-                        const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team);
-                        return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inView;
-                    },
-                },
-                canBSeen: {
-                    set(value) { this.inViewBot = value; },
-                    get() {
-                        const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team);
-                        return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inViewBot;
-                    },
-                },
+                get: (target, prop) => {
+                    if (prop === this.isProxy) return true;
+                    return Reflect.get(target, prop);
+                }
             });
         }
 
-        onRenderFrame() {
-            if (!this.three || !this.renderer?.camera || !this.me) return;
-
-            if (this.me.procInputs && !this.me.procInputs[this.isProxy]) {
-                const originalProcInputs = this.me.procInputs;
-                this.me.procInputs = new Proxy(originalProcInputs, {
-                    apply: (target, thisArg, args) => {
-                        if (thisArg) {
-                            this.onProcessInputs(args[0], thisArg);
-                        }
-                        return Reflect.apply(target, thisArg, args);
-                    },
-                    get: (target, prop) => {
-                        if (prop === this.isProxy) return true;
-                        return Reflect.get(target, prop);
-                    }
-                });
-            }
-
-            if (this.renderer.scene) {
-                this.renderer.scene.traverse(child => {
-                    if (child.material && child.type == 'Mesh' && child.name != '' && child.isObject3D && !child.isModel && child.isMesh){
-                        if (Array.isArray(child.material)) {
-                            for (const material of child.material) material.wireframe = this.settings.wireframeEnabled;
-                        } else child.material.wireframe = this.settings.wireframeEnabled;
-                    }
-                });
-            }
-
-            const original_strokeStyle = this.ctx.strokeStyle;
-            const original_lineWidth = this.ctx.lineWidth;
-            const original_font = this.ctx.font;
-            const original_fillStyle = this.ctx.fillStyle;
-
-            let CRC2d = CanvasRenderingContext2D.prototype
-
-            CRC2d.save.apply(this.ctx, []);
-
-            if (this.settings.fovSize > 0 && this.settings.drawFovCircle) {
-                const centerX = this.overlay.canvas.width / 2;
-                const centerY = this.overlay.canvas.height / 2;
-                const radius = this.settings.fovSize;
-
-                this.ctx.beginPath();
-                this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-                this.ctx.lineWidth = 2;
-                this.ctx.strokeStyle = 'rgba(255, 0, 128, 0.7)';
-                this.ctx.shadowColor = 'rgba(255, 0, 128, 1)';
-                this.ctx.shadowBlur = 10;
-                this.ctx.stroke();
-                this.ctx.shadowBlur = 0;
-            }
-
-            for (const player of this.game.players.list) {
-                if (player.isYou || !player.active || !player.objInstances) continue;
-                this.drawCanvasESP(player , false, CRC2d);
-            }
-
-            if(this.settings.espBotCheck){
-                for (const bot of this.game.AI.ais) {
-                    if (!bot.mesh && !bot.mesh.visible && bot.health >! 0) continue;
-                    this.drawCanvasESP(bot, true, CRC2d);
+        if (this.renderer.scene) {
+            this.renderer.scene.traverse(child => {
+                if (child.material && child.type == 'Mesh' && child.name != '' && child.isObject3D && !child.isModel && child.isMesh){
+                    if (Array.isArray(child.material)) {
+                        for (const material of child.material) material.wireframe = this.settings.wireframeEnabled;
+                    } else child.material.wireframe = this.settings.wireframeEnabled;
                 }
-            }
-
-            CRC2d.restore.apply(this.ctx, []);
-
-            this.ctx.strokeStyle = original_strokeStyle;
-            this.ctx.lineWidth = original_lineWidth;
-            this.ctx.font = original_font;
-            this.ctx.fillStyle = original_fillStyle;
+            });
         }
 
-        onProcessInputs(inputPacket, player) {
-            const gameInputIndices = { frame: 0, delta: 1, xdir: 2, ydir: 3, moveDir: 4, shoot: 5, scope: 6, jump: 7, reload: 8, crouch: 9, weaponScroll: 10, weaponSwap: 11, moveLock: 12 };
+        const original_strokeStyle = this.ctx.strokeStyle;
+        const original_lineWidth = this.ctx.lineWidth;
+        const original_font = this.ctx.font;
+        const original_fillStyle = this.ctx.fillStyle;
 
-            if (this.settings.bhopEnabled && this.pressedKeys.has('Space')) {
-                this.controls.keys[this.controls.binds.jump.val] ^= 1;
-                if (this.controls.keys[this.controls.binds.jump.val]) {
-                    this.controls.didPressed[this.controls.binds.jump.val] = 1;
-                }
+        let CRC2d = CanvasRenderingContext2D.prototype
 
-                if (this.me.velocity.y < -0.03 && this.me.canSlide) {
-                    setTimeout(() => { this.controls.keys[this.controls.binds.crouch.val] = 0; }, this.me.slideTimer || 325);
-                    this.controls.keys[this.controls.binds.crouch.val] = 1;
-                    this.controls.didPressed[this.controls.binds.crouch.val] = 1;
-                }
+        CRC2d.save.apply(this.ctx, []);
+
+        if (this.settings.fovSize > 0 && this.settings.drawFovCircle) {
+            const centerX = this.overlay.canvas.width / 2;
+            const centerY = this.overlay.canvas.height / 2;
+            const radius = this.settings.fovSize;
+
+            this.ctx.beginPath();
+            this.ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+            this.ctx.lineWidth = 2;
+            this.ctx.strokeStyle = 'rgba(255, 0, 128, 0.7)';
+            this.ctx.shadowColor = 'rgba(255, 0, 128, 1)';
+            this.ctx.shadowBlur = 10;
+            this.ctx.stroke();
+            this.ctx.shadowBlur = 0;
+        }
+
+        for (const player of this.game.players.list) {
+            if (player.isYou || !player.active || !player.objInstances) continue;
+            this.drawCanvasESP(player , false, CRC2d);
+        }
+
+        if(this.settings.espBotCheck){
+            for (const bot of this.game.AI.ais) {
+                if (!bot.mesh && !bot.mesh.visible && bot.health >! 0) continue;
+                this.drawCanvasESP(bot, true, CRC2d);
+            }
+        }
+
+        CRC2d.restore.apply(this.ctx, []);
+
+        this.ctx.strokeStyle = original_strokeStyle;
+        this.ctx.lineWidth = original_lineWidth;
+        this.ctx.font = original_font;
+        this.ctx.fillStyle = original_fillStyle;
+    }
+
+    onProcessInputs(inputPacket, player) {
+        const gameInputIndices = { frame: 0, delta: 1, xdir: 2, ydir: 3, moveDir: 4, shoot: 5, scope: 6, jump: 7, reload: 8, crouch: 9, weaponScroll: 10, weaponSwap: 11, moveLock: 12 };
+
+        if (this.settings.bhopEnabled && this.pressedKeys.has('Space')) {
+            this.controls.keys[this.controls.binds.jump.val] ^= 1;
+            if (this.controls.keys[this.controls.binds.jump.val]) {
+                this.controls.didPressed[this.controls.binds.jump.val] = 1;
             }
 
-            if (this.settings.autoNuke && Object.keys(this.me.streaks).length && this.socket?.send) {
-                this.socket.send('k', 0);
+            if (this.me.velocity.y < -0.03 && this.me.canSlide) {
+                setTimeout(() => { this.controls.keys[this.controls.binds.crouch.val] = 0; }, this.me.slideTimer || 325);
+                this.controls.keys[this.controls.binds.crouch.val] = 1;
+                this.controls.didPressed[this.controls.binds.crouch.val] = 1;
             }
+        }
 
-            if (this.settings.autoReload && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && this.me.ammos[this.me.weapon.secondary ? 1 : 0] === 0 && this.me.reloadTimer === 0) {
-                this.game.players.reload(this.me);
-                inputPacket[gameInputIndices.reload] = 1;
-            }
+        if (this.settings.autoNuke && Object.keys(this.me.streaks).length && this.socket?.send) {
+            this.socket.send('k', 0);
+        }
 
-            // Aimbot
-            let target = null;
-            /*this.playerMaps.length = 0;
+        if (this.settings.autoReload && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && this.me.ammos[this.me.weapon.secondary ? 1 : 0] === 0 && this.me.reloadTimer === 0) {
+            this.game.players.reload(this.me);
+            inputPacket[gameInputIndices.reload] = 1;
+        }
+
+        // Aimbot
+        let target = null;
+        /*this.playerMaps.length = 0;
             this.rayC.setFromCamera(this.vec2, this.renderer.fpsCamera);*/
-            if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
-                let potentialTargets = this.game.players.list
-                .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || this.getCanSee(p)))
-                .map(p => ({ ...p, isBot: false }));
+        if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
+            let potentialTargets = this.game.players.list
+            .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || this.getCanSee(p)))
+            .map(p => ({ ...p, isBot: false }));
 
-                if (this.settings.aimbotBotCheck && this.game.AI?.ais) {
-                    const botTargets = this.game.AI.ais
-                    .filter(bot => bot.mesh && bot.mesh.visible && bot.health > 0 && (!this.settings.aimbotWallCheck || this.getCanSee(bot)))
-                    .map(bot => ({ ...bot, isBot: true }));
-                    potentialTargets = potentialTargets.concat(botTargets);
-                }
-
-                potentialTargets.sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
-
-                if (this.settings.fovSize > 0) {
-                    const fovRadius = this.settings.fovSize;
-                    const centerX = this.overlay.canvas.width / 2;
-                    const centerY = this.overlay.canvas.height / 2;
-
-                    potentialTargets = potentialTargets.filter(p => {
-                        const screenPos = this.world2Screen(new this.three.Vector3(p.x, p.y, p.z));
-                        if (!screenPos) return false;
-
-                        const dist = Math.sqrt(Math.pow(screenPos.x - centerX, 2) + Math.pow(screenPos.y - centerY, 2));
-                        return dist <= fovRadius;
-                    });
-                }
-
-                target = potentialTargets[0] || null;
+            if (this.settings.aimbotBotCheck && this.game.AI?.ais) {
+                const botTargets = this.game.AI.ais
+                .filter(bot => bot.mesh && bot.mesh.visible && bot.health > 0 && (!this.settings.aimbotWallCheck || this.getCanSee(bot)))
+                .map(bot => ({ ...bot, isBot: true }));
+                potentialTargets = potentialTargets.concat(botTargets);
             }
 
-            if (target && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && !this.me.weapon.melee) {
-                const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
-                //const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
-                const xDire = target.isBot ? ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.dat.mSize / 2, target.z) || 0) - (0.3 * this.me.recoilAnimY)) : ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY))
+            potentialTargets.sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
 
-                this.lookDir(xDire, yDire);
+            if (this.settings.fovSize > 0) {
+                const fovRadius = this.settings.fovSize;
+                const centerX = this.overlay.canvas.width / 2;
+                const centerY = this.overlay.canvas.height / 2;
 
-                // süper silet için
-                /*inputPacket[gameInputIndices.xdir] = xDire * 1e3;
+                potentialTargets = potentialTargets.filter(p => {
+                    const screenPos = this.world2Screen(new this.three.Vector3(p.x, p.y, p.z));
+                    if (!screenPos) return false;
+
+                    const dist = Math.sqrt(Math.pow(screenPos.x - centerX, 2) + Math.pow(screenPos.y - centerY, 2));
+                    return dist <= fovRadius;
+                });
+            }
+
+            target = potentialTargets[0] || null;
+        }
+
+        if (target && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && !this.me.weapon.melee) {
+            const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
+            //const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
+            const xDire = target.isBot ? ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.dat.mSize / 2, target.z) || 0) - (0.3 * this.me.recoilAnimY)) : ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY))
+
+            this.lookDir(xDire, yDire);
+
+            // süper silet için
+            /*inputPacket[gameInputIndices.xdir] = xDire * 1e3;
                 inputPacket[gameInputIndices.ydir] = yDire * 1e3;*/
 
-                //gereksiz fare'nin oyuncuda olup olmadığını konturol ediyor
-                /*this.playerMaps = this.game.players.list
+            //gereksiz fare'nin oyuncuda olup olmadığını konturol ediyor
+            /*this.playerMaps = this.game.players.list
                     .map(p => p.objInstances)
                     .filter(Boolean);
                 let inCast = this.rayC.intersectObjects(this.playerMaps, true).length;
                 let canSee = target && this.containsPoint(target.objInstances.position);*/
 
-                if (this.settings.autoFireEnabled && !this.me.weapon.melee /*&& inCast && canSee*/) {
-                    if (!this.me.weapon.noAim) inputPacket[gameInputIndices.scope] = 1;
-                    if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot) inputPacket[gameInputIndices.shoot] = 1;
-                }
-
-
-            } else if (target && this.me.weapon.melee) {
-                const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
-                const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
-
-                const distance = this.getDistance(this.me, target);
-
-                const closeRange = 17.610595881164134;
-                const throwRange = 65.24113971486675;
-
-                if (distance <= closeRange) {
-                    this.lookDir(xDire, yDire);
-
-                    if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0) {
-                        inputPacket[gameInputIndices.shoot] = 1;
-                    }
-                } else if (distance <= throwRange && this.me.weapon.canThrow) {
-                    this.lookDir(xDire, yDire);
-
-                    if (this.settings.autoFireEnabled) {
-                        inputPacket[gameInputIndices.scope] = 1;
-                        if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
-                    }
-                }
-            } else if (!target && this.settings.fovSize >! 0) {
-                this.resetLookAt();
-            } else if (this.me.weapon.nAuto && this.me.didShoot) {
-                inputPacket[gameInputIndices.shoot] = 0;
-                inputPacket[gameInputIndices.scope] = 0;
-                this.me.inspecting = false;
-                this.me.inspectX = 0;
+            if (this.settings.autoFireEnabled && !this.me.weapon.melee /*&& inCast && canSee*/) {
+                if (!this.me.weapon.noAim) inputPacket[gameInputIndices.scope] = 1;
+                if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot) inputPacket[gameInputIndices.shoot] = 1;
             }
-        }
 
-        showGUI() {
-            if (this.game && !this.game.gameClosed) {
-                if (document.pointerLockElement || document.mozPointerLockElement) {
-                    document.exitPointerLock();
+
+        } else if (target && this.me.weapon.melee) {
+            const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
+            const xDire = ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
+
+            const distance = this.getDistance(this.me, target);
+
+            const closeRange = 17.610595881164134;
+            const throwRange = 65.24113971486675;
+
+            if (distance <= closeRange) {
+                this.lookDir(xDire, yDire);
+
+                if (this.settings.autoFireEnabled && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0) {
+                    inputPacket[gameInputIndices.shoot] = 1;
+                }
+            } else if (distance <= throwRange && this.me.weapon.canThrow) {
+                this.lookDir(xDire, yDire);
+
+                if (this.settings.autoFireEnabled) {
+                    inputPacket[gameInputIndices.scope] = 1;
+                    if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){inputPacket[gameInputIndices.shoot] = 1;}
                 }
             }
-            window.showWindow(this.GUI.windowIndex);
+        } else if (!target && this.settings.fovSize >! 0) {
+            this.resetLookAt();
+        } else if (this.me.weapon.nAuto && this.me.didShoot) {
+            inputPacket[gameInputIndices.shoot] = 0;
+            inputPacket[gameInputIndices.scope] = 0;
+            this.me.inspecting = false;
+            this.me.inspectX = 0;
         }
+    }
 
-        initGameGUI() {
-            const fontLink = document.createElement('link');
-            fontLink.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap';
-            fontLink.rel = 'stylesheet';
-            document.head.appendChild(fontLink);
+    showGUI() {
+        if (this.game && !this.game.gameClosed) {
+            if (document.pointerLockElement || document.mozPointerLockElement) {
+                document.exitPointerLock();
+            }
+        }
+        window.showWindow(this.GUI.windowIndex);
+    }
 
-            const animeFontLink = document.createElement('link');
-            animeFontLink.href = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&display=swap';
-            animeFontLink.rel = 'stylesheet';
-            document.head.appendChild(animeFontLink);
+    initGameGUI() {
+        const fontLink = document.createElement('link');
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap';
+        fontLink.rel = 'stylesheet';
+        document.head.appendChild(fontLink);
 
-            const menuCSS = `
+        const animeFontLink = document.createElement('link');
+        animeFontLink.href = 'https://fonts.googleapis.com/css2?family=Rajdhani:wght@700&display=swap';
+        animeFontLink.rel = 'stylesheet';
+        document.head.appendChild(animeFontLink);
+
+        const menuCSS = `
              .anonimbiri-menu-container{font-family:'Orbitron',monospace!important;background-color:rgba(10,10,10,.95)!important;border:2px solid #ff0080!important;border-radius:15px!important;box-shadow:0 0 30px rgba(255,0,128,.5),inset 0 0 20px rgba(255,0,128,.1)!important;backdrop-filter:blur(10px)!important;padding:0px!important; animation:anonimbiri-menuGlow 2s ease-in-out infinite alternate,anonimbiri-slideIn .5s ease-out;}
              @keyframes anonimbiri-menuGlow{from{box-shadow:0 0 30px rgba(255,0,128,.3),inset 0 0 20px rgba(255,0,128,.1)}to{box-shadow:0 0 50px rgba(255,0,128,.6),inset 0 0 30px rgba(255,0,128,.2)}}
              @keyframes anonimbiri-slideIn{from{opacity:0;transform:translate(-50%, calc(-50% - 20px)) scale(.95)}to{opacity:1;transform:translate(-50% - 20px) scale(1)}}
@@ -721,11 +776,11 @@ window[cheatInstanceId] = function() {
              .anonimbiri-notify-action-btn:hover{background:#ff0080;transform:scale(1.05)}
              `;
 
-            const style = document.createElement('style');
-            style.textContent = menuCSS;
-            document.head.appendChild(style);
+        const style = document.createElement('style');
+        style.textContent = menuCSS;
+        document.head.appendChild(style);
 
-            const hotkeyModalHTML = `
+        const hotkeyModalHTML = `
              <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
                  <div class="anonimbiri-hotkey-content">
                      <h2>Assign Hotkey</h2>
@@ -733,96 +788,96 @@ window[cheatInstanceId] = function() {
                      <p>(Press ESC to cancel)</p>
                  </div>
              </div>`;
-            const modalContainer = document.createElement('div');
-            modalContainer.innerHTML = hotkeyModalHTML;
-            document.body.appendChild(modalContainer);
-            this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = hotkeyModalHTML;
+        document.body.appendChild(modalContainer);
+        this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-            this.GUI.windowIndex = window.windows.length + 1;
-            this.GUI.windowObj = {
-                closed: false,
-                header: "🌸 AimbaeShiro 🌸",
-                html: "",
-                extraCls: "anonimbiri-menu-container",
-                gen: () => this.getGuiHtml(),
-                hideScroll: true,
-                height: 'calc(100% - 300px)',
-                width: 500,
-            };
+        this.GUI.windowIndex = window.windows.length + 1;
+        this.GUI.windowObj = {
+            closed: false,
+            header: "🌸 AimbaeShiro 🌸",
+            html: "",
+            extraCls: "anonimbiri-menu-container",
+            gen: () => this.getGuiHtml(),
+            hideScroll: true,
+            height: 'calc(100% - 300px)',
+            width: 500,
+        };
 
-            Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
+        Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
 
-            this.waitFor(() => window.menuItemContainer).then(menu => {
-                if (menu && !document.getElementById('shiro-menu-button')) {
-                    const btn = document.createElement("div");
-                    btn.id = 'shiro-menu-button';
-                    btn.className = "menuItem";
-                    btn.innerHTML = ``;
-                    btn.addEventListener("click", () => this.showGUI());
-                    btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
-                    menu.prepend(btn);
-                }
-            });
+        this.waitFor(() => window.menuItemContainer).then(menu => {
+            if (menu && !document.getElementById('shiro-menu-button')) {
+                const btn = document.createElement("div");
+                btn.id = 'shiro-menu-button';
+                btn.className = "menuItem";
+                btn.innerHTML = ``;
+                btn.addEventListener("click", () => this.showGUI());
+                btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
+                menu.prepend(btn);
+            }
+        });
+    }
+
+    getGuiHtml() {
+        const neonIcons = {
+            aimbot: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
+            rightMouse: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 6v4"/>',
+            wallCheck: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16M8 6v12M16 6v12"/>',
+            wallbangs: '<rect x="2" y="2" width="2" height="20" rx="1"/><path d="M4 2l10 3v16L4 18V2z"/><circle cx="12" cy="12" r="1"/><path d="M16 12h6m-3-2l2 2-2 2"/>',
+            teamCheck: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
+            autoFire: '<path d="M13 3L6 12h4l-2 9 8-12h-4l1-6z"/>',
+            espLines: '<circle cx="12" cy="12" r="9"/><path d="M12 12l6-6M12 12h9M12 12v9"/>',
+            espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
+            nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
+            weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
+            espInfoBackground: '<rect x="3" y="6" width="18" height="12" rx="2"/>',
+            colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
+            wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
+            unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
+            bunnyHop: '<path d="M6 16l6-6 6 6"/><path d="M6 10h12"/>',
+            autoNuke: '<circle cx="12" cy="12" r="2"/><path d="M12 4v4l-3 2"/><path d="M20 12h-4l-2-3"/><path d="M12 20v-4l3-2"/>',
+            antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
+            autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
+            hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
+            fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>',
+            botCheck: '<circle cx="12" cy="4" r="1.4"/><path d="M12 5.6v1.8"/><rect x="5" y="8" width="14" height="10" rx="3"/><circle cx="9" cy="13" r="1.2"/><circle cx="15" cy="13" r="1.2"/><path d="M9 16h6"/><path d="M5.5 19l1.8 1.8L10.5 17.6" />',
+            botColor: '<path d="M12 5a7 7 0 1 0 0 14c1.8 0 3-1.2 3-2.6 0-1-1-1.8-2.2-1.8h-.8a2.6 2.6 0 1 1 0-5.2h1"/><circle cx="8.5" cy="11" r="1"/><circle cx="11.5" cy="9.5" r="1"/><circle cx="15.2" cy="11.2" r="1"/><circle cx="9.5" cy="14" r="1"/><path d="M18.5 6.5l.8 2 .8-2 2-.8-2-.8-.8-2-.8 2-2 .8 2 .8z"/>'
+        };
+
+        const tooltips = {
+            aimbotEnabled: 'Master aimbot toggle.',
+            aimbotOnRightMouse: 'Only activate aimbot when right mouse is held.',
+            aimbotWallCheck: 'Aimbot will not target players through walls.',
+            aimbotWallBangs: 'Allows aimbot to shoot through penetrable walls.',
+            aimbotTeamCheck: 'Aimbot will not target teammates.',
+            aimbotBotCheck: 'Aimbot will target AI/bots.',
+            autoFireEnabled: 'Automatically fires when an aimbot target is acquired.',
+            fovSize: 'Radius of the circle (in pixels) where aimbot can target enemies. Set to 0 for full screen.',
+            drawFovCircle: 'Displays the aimbot FOV circle on screen.',
+            espTeamCheck: 'Do not show ESP for teammates.',
+            espBotCheck: 'Show ESP for AI/bots.',
+            espLines: 'Draws a line from the bottom of your screen to enemies.',
+            espSquare: 'Draws a box around enemies.',
+            espNameTags: 'Shows player name, health, and current weapon.',
+            espWeaponIcons: 'Shows weapon icon/name in Full Info ESP.',
+            espInfoBackground: 'Displays a background panel for player name/weapon information.',
+            espColor: 'Color for ESP lines.',
+            boxColor: 'Color for ESP boxes and text.',
+            botColor: 'Special color for bot ESP.',
+            wireframeEnabled: 'Renders the map and players in wireframe mode.',
+            unlockSkins: 'Client-side skin unlocker.',
+            bhopEnabled: 'Hold space to automatically jump/slide.',
+            autoNuke: 'Automatically uses nuke when available.',
+            antikick: 'Prevents being kicked for inactivity.',
+            autoReload: 'Automatically reloads your weapon when out of ammo.',
+            toggleMenu: 'Set a key to open/close this menu.',
         }
 
-        getGuiHtml() {
-            const neonIcons = {
-                aimbot: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
-                rightMouse: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 6v4"/>',
-                wallCheck: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16M8 6v12M16 6v12"/>',
-                wallbangs: '<rect x="2" y="2" width="2" height="20" rx="1"/><path d="M4 2l10 3v16L4 18V2z"/><circle cx="12" cy="12" r="1"/><path d="M16 12h6m-3-2l2 2-2 2"/>',
-                teamCheck: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
-                autoFire: '<path d="M13 3L6 12h4l-2 9 8-12h-4l1-6z"/>',
-                espLines: '<circle cx="12" cy="12" r="9"/><path d="M12 12l6-6M12 12h9M12 12v9"/>',
-                espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
-                nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
-                weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
-                espInfoBackground: '<rect x="3" y="6" width="18" height="12" rx="2"/>',
-                colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
-                wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
-                unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
-                bunnyHop: '<path d="M6 16l6-6 6 6"/><path d="M6 10h12"/>',
-                autoNuke: '<circle cx="12" cy="12" r="2"/><path d="M12 4v4l-3 2"/><path d="M20 12h-4l-2-3"/><path d="M12 20v-4l3-2"/>',
-                antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
-                autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
-                hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
-                fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>',
-                botCheck: '<circle cx="12" cy="4" r="1.4"/><path d="M12 5.6v1.8"/><rect x="5" y="8" width="14" height="10" rx="3"/><circle cx="9" cy="13" r="1.2"/><circle cx="15" cy="13" r="1.2"/><path d="M9 16h6"/><path d="M5.5 19l1.8 1.8L10.5 17.6" />',
-                botColor: '<path d="M12 5a7 7 0 1 0 0 14c1.8 0 3-1.2 3-2.6 0-1-1-1.8-2.2-1.8h-.8a2.6 2.6 0 1 1 0-5.2h1"/><circle cx="8.5" cy="11" r="1"/><circle cx="11.5" cy="9.5" r="1"/><circle cx="15.2" cy="11.2" r="1"/><circle cx="9.5" cy="14" r="1"/><path d="M18.5 6.5l.8 2 .8-2 2-.8-2-.8-.8-2-.8 2-2 .8 2 .8z"/>'
-            };
+        setTimeout(this.bindMenuEvents.bind(this), 100);
 
-            const tooltips = {
-                aimbotEnabled: 'Master aimbot toggle.',
-                aimbotOnRightMouse: 'Only activate aimbot when right mouse is held.',
-                aimbotWallCheck: 'Aimbot will not target players through walls.',
-                aimbotWallBangs: 'Allows aimbot to shoot through penetrable walls.',
-                aimbotTeamCheck: 'Aimbot will not target teammates.',
-                aimbotBotCheck: 'Aimbot will target AI/bots.',
-                autoFireEnabled: 'Automatically fires when an aimbot target is acquired.',
-                fovSize: 'Radius of the circle (in pixels) where aimbot can target enemies. Set to 0 for full screen.',
-                drawFovCircle: 'Displays the aimbot FOV circle on screen.',
-                espTeamCheck: 'Do not show ESP for teammates.',
-                espBotCheck: 'Show ESP for AI/bots.',
-                espLines: 'Draws a line from the bottom of your screen to enemies.',
-                espSquare: 'Draws a box around enemies.',
-                espNameTags: 'Shows player name, health, and current weapon.',
-                espWeaponIcons: 'Shows weapon icon/name in Full Info ESP.',
-                espInfoBackground: 'Displays a background panel for player name/weapon information.',
-                espColor: 'Color for ESP lines.',
-                boxColor: 'Color for ESP boxes and text.',
-                botColor: 'Special color for bot ESP.',
-                wireframeEnabled: 'Renders the map and players in wireframe mode.',
-                unlockSkins: 'Client-side skin unlocker.',
-                bhopEnabled: 'Hold space to automatically jump/slide.',
-                autoNuke: 'Automatically uses nuke when available.',
-                antikick: 'Prevents being kicked for inactivity.',
-                autoReload: 'Automatically reloads your weapon when out of ammo.',
-                toggleMenu: 'Set a key to open/close this menu.',
-            }
-
-            setTimeout(this.bindMenuEvents.bind(this), 100);
-
-            return `
+        return `
                  <div class="anonimbiri-menu-header" id="anonimbiri-menuHeader"></div>
 
                  <div class="anonimbiri-tab-container">
@@ -886,449 +941,410 @@ window[cheatInstanceId] = function() {
                          ${this.createMenuItemHTML('hotkey','bhopEnabled','Toggle Bunny Hop', neonIcons.bunnyHop, tooltips.bhopEnabled)}
                      </div>
                  </div>`;
-        }
+    }
 
-        createMenuItemHTML(type, setting, label, iconPath, tooltip = '', min, max, step) {
-            let controlHTML = '';
-            const iconSVG = `<svg class="anonimbiri-menu-item-icon" viewBox="0 0 24 24">${iconPath}</svg>`;
-            switch (type) {
-                case 'toggle':
-                    controlHTML = `<div class="anonimbiri-toggle-switch ${this.settings[setting] ? 'active' : ''}"></div>`;
-                    break;
-                case 'color':
-                    controlHTML = `<div class="anonimbiri-color-container">
+    createMenuItemHTML(type, setting, label, iconPath, tooltip = '', min, max, step) {
+        let controlHTML = '';
+        const iconSVG = `<svg class="anonimbiri-menu-item-icon" viewBox="0 0 24 24">${iconPath}</svg>`;
+        switch (type) {
+            case 'toggle':
+                controlHTML = `<div class="anonimbiri-toggle-switch ${this.settings[setting] ? 'active' : ''}"></div>`;
+                break;
+            case 'color':
+                controlHTML = `<div class="anonimbiri-color-container">
                          <input type="color" class="anonimbiri-color-picker-input" data-setting="${setting}" value="${this.settings[setting]}">
                          <div class="anonimbiri-color-preview" data-setting="${setting}" style="background-color: ${this.settings[setting]}"></div>
                      </div>`;
-                    break;
-                case 'hotkey':
-                    controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}">${this.hotkeys[setting]?.replace('Key', '').replace('Digit', '') || 'N/A'}</div>`;
-                    break;
-                case 'slider':
-                    const val = (this.settings && typeof this.settings[setting] !== 'undefined') ? this.settings[setting] : 0;
-                    const displayVal = val <= 0 ? 'Off' : val;
-                    controlHTML = `<div class="anonimbiri-slider-container" data-setting="${setting}">
+                break;
+            case 'hotkey':
+                controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}">${this.hotkeys[setting]?.replace('Key', '').replace('Digit', '') || 'N/A'}</div>`;
+                break;
+            case 'slider':
+                const val = (this.settings && typeof this.settings[setting] !== 'undefined') ? this.settings[setting] : 0;
+                const displayVal = val <= 0 ? 'Off' : val;
+                controlHTML = `<div class="anonimbiri-slider-container" data-setting="${setting}">
                          <input type="range" class="anonimbiri-slider" data-setting="${setting}" min="${min}" max="${max}" step="${step}" value="${val}">
                          <input type="text" class="anonimbiri-slider-value" data-setting="${setting}" value="${displayVal}" onfocus="this.type='number'" onblur="this.type='text'; this.value = this.value <= 0 ? 'Off' : this.value">
                      </div>`;
-                    break;
-            }
-            return `<div class="anonimbiri-menu-item ${this.settings[setting] ? 'active' : ''}" data-setting="${setting}" title="${tooltip}">
+                break;
+        }
+        return `<div class="anonimbiri-menu-item ${this.settings[setting] ? 'active' : ''}" data-setting="${setting}" title="${tooltip}">
                  <div class="anonimbiri-menu-item-content">${iconSVG}<label>${label}</label></div>
                  <div class="anonimbiri-controls">${controlHTML}</div>
              </div>`;
-        }
+    }
 
-        bindMenuEvents() {
-            const menu = document.querySelector('.anonimbiri-menu-container');
-            if (!menu) return;
+    bindMenuEvents() {
+        const menu = document.querySelector('.anonimbiri-menu-container');
+        if (!menu) return;
 
-            menu.querySelector('.anonimbiri-tab-container').addEventListener('click', (e) => {
-                if (e.target.classList.contains('anonimbiri-tab')) {
-                    if (window.SOUND) window.SOUND.play('select_0', 0.1);
-                    const tabName = e.target.dataset.tab;
-                    menu.querySelectorAll('.anonimbiri-tab').forEach(t => t.classList.remove('active'));
-                    menu.querySelectorAll('.anonimbiri-tab-pane').forEach(p => p.classList.remove('active'));
-                    e.target.classList.add('active');
-                    menu.querySelector(`#anonimbiri-tab-${tabName}`).classList.add('active');
-                }
-            });
-
-            menu.querySelector('.anonimbiri-tab-content').addEventListener('click', (e) => {
-                const menuItem = e.target.closest('.anonimbiri-menu-item');
-                if (!menuItem) return;
-                const setting = menuItem.dataset.setting;
-                if (!setting || menuItem.querySelector('.anonimbiri-slider-container')) return;
-
+        menu.querySelector('.anonimbiri-tab-container').addEventListener('click', (e) => {
+            if (e.target.classList.contains('anonimbiri-tab')) {
                 if (window.SOUND) window.SOUND.play('select_0', 0.1);
+                const tabName = e.target.dataset.tab;
+                menu.querySelectorAll('.anonimbiri-tab').forEach(t => t.classList.remove('active'));
+                menu.querySelectorAll('.anonimbiri-tab-pane').forEach(p => p.classList.remove('active'));
+                e.target.classList.add('active');
+                menu.querySelector(`#anonimbiri-tab-${tabName}`).classList.add('active');
+            }
+        });
 
-                if (menuItem.querySelector('.anonimbiri-toggle-switch')) {
-                    this.settings[setting] = !this.settings[setting];
-                    this.saveSettings('aimbaeshiro_settings', this.settings);
-                    menuItem.classList.toggle('active');
-                    menuItem.querySelector('.anonimbiri-toggle-switch').classList.toggle('active');
-                } else if (menuItem.querySelector('.anonimbiri-color-picker-input')) {
-                    menuItem.querySelector('.anonimbiri-color-picker-input').click();
-                } else if (menuItem.querySelector('.anonimbiri-hotkey')) {
-                    this.showHotkeyModal(setting);
-                }
-            });
+        menu.querySelector('.anonimbiri-tab-content').addEventListener('click', (e) => {
+            const menuItem = e.target.closest('.anonimbiri-menu-item');
+            if (!menuItem) return;
+            const setting = menuItem.dataset.setting;
+            if (!setting || menuItem.querySelector('.anonimbiri-slider-container')) return;
 
-            menu.querySelectorAll('.anonimbiri-color-picker-input').forEach(cp => cp.addEventListener('input', (e) => {
-                const setting = e.target.dataset.setting;
-                this.settings[setting] = e.target.value;
+            if (window.SOUND) window.SOUND.play('select_0', 0.1);
+
+            if (menuItem.querySelector('.anonimbiri-toggle-switch')) {
+                this.settings[setting] = !this.settings[setting];
                 this.saveSettings('aimbaeshiro_settings', this.settings);
-                menu.querySelector(`.anonimbiri-color-preview[data-setting="${setting}"]`).style.backgroundColor = e.target.value;
-            }));
+                menuItem.classList.toggle('active');
+                menuItem.querySelector('.anonimbiri-toggle-switch').classList.toggle('active');
+            } else if (menuItem.querySelector('.anonimbiri-color-picker-input')) {
+                menuItem.querySelector('.anonimbiri-color-picker-input').click();
+            } else if (menuItem.querySelector('.anonimbiri-hotkey')) {
+                this.showHotkeyModal(setting);
+            }
+        });
 
-            menu.querySelectorAll('.anonimbiri-slider').forEach(slider => {
-                const setting = slider.dataset.setting;
-                const valueInput = menu.querySelector(`.anonimbiri-slider-value[data-setting="${setting}"]`);
-                slider.addEventListener('input', () => {
-                    const value = slider.value;
-                    this.settings[setting] = Number(value);
-                    const displayVal = value <= 0 ? 'Off' : value;
-                    if (valueInput) valueInput.value = displayVal;
-                });
-                slider.addEventListener('change', () => this.saveSettings('aimbaeshiro_settings', this.settings));
+        menu.querySelectorAll('.anonimbiri-color-picker-input').forEach(cp => cp.addEventListener('input', (e) => {
+            const setting = e.target.dataset.setting;
+            this.settings[setting] = e.target.value;
+            this.saveSettings('aimbaeshiro_settings', this.settings);
+            menu.querySelector(`.anonimbiri-color-preview[data-setting="${setting}"]`).style.backgroundColor = e.target.value;
+        }));
+
+        menu.querySelectorAll('.anonimbiri-slider').forEach(slider => {
+            const setting = slider.dataset.setting;
+            const valueInput = menu.querySelector(`.anonimbiri-slider-value[data-setting="${setting}"]`);
+            slider.addEventListener('input', () => {
+                const value = slider.value;
+                this.settings[setting] = Number(value);
+                const displayVal = value <= 0 ? 'Off' : value;
+                if (valueInput) valueInput.value = displayVal;
             });
+            slider.addEventListener('change', () => this.saveSettings('aimbaeshiro_settings', this.settings));
+        });
 
-            menu.querySelectorAll('.anonimbiri-slider-value').forEach(valueInput => {
-                const setting = valueInput.dataset.setting;
-                const slider = menu.querySelector(`.anonimbiri-slider[data-setting="${setting}"]`);
-                valueInput.addEventListener('input', () => {
-                    let value = Number(valueInput.value);
-                    const min = Number(slider.min);
-                    const max = Number(slider.max);
-                    if (value > max) value = max;
-                    if (value < min) value = min;
-                    valueInput.value = value;
-                    this.settings[setting] = value;
-                    if (slider) slider.value = value;
-                });
-                valueInput.addEventListener('change', () => this.saveSettings('aimbaeshiro_settings', this.settings));
+        menu.querySelectorAll('.anonimbiri-slider-value').forEach(valueInput => {
+            const setting = valueInput.dataset.setting;
+            const slider = menu.querySelector(`.anonimbiri-slider[data-setting="${setting}"]`);
+            valueInput.addEventListener('input', () => {
+                let value = Number(valueInput.value);
+                const min = Number(slider.min);
+                const max = Number(slider.max);
+                if (value > max) value = max;
+                if (value < min) value = min;
+                valueInput.value = value;
+                this.settings[setting] = value;
+                if (slider) slider.value = value;
             });
+            valueInput.addEventListener('change', () => this.saveSettings('aimbaeshiro_settings', this.settings));
+        });
 
-            menu.querySelectorAll('.anonimbiri-menu-item, .anonimbiri-tab').forEach(el => {
-                el.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
-            });
-        }
+        menu.querySelectorAll('.anonimbiri-menu-item, .anonimbiri-tab').forEach(el => {
+            el.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
+        });
+    }
 
-        addEventListeners() {
-            window.addEventListener('pointerdown', (e) => { if (e.button === 2) this.rightMouseDown = true; });
-            window.addEventListener('pointerup', (e) => { if (e.button === 2) this.rightMouseDown = false; });
-            window.addEventListener('keydown', (e) => {
-                this.pressedKeys.add(e.code);
-                if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
+    addEventListeners() {
+        window.addEventListener('pointerdown', (e) => { if (e.button === 2) this.rightMouseDown = true; });
+        window.addEventListener('pointerup', (e) => { if (e.button === 2) this.rightMouseDown = false; });
+        window.addEventListener('keydown', (e) => {
+            this.pressedKeys.add(e.code);
+            if (document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "TEXTAREA") return;
 
-                if (this.isBindingHotkey) {
-                    e.preventDefault(); e.stopPropagation();
-                    if (e.code === 'Escape') { this.hideHotkeyModal(); return; }
-                    if (Object.values(this.hotkeys).includes(e.code)) { this.notify({ title: "Hotkey Error", message: "Key already assigned!"}); return; }
-                    this.hotkeys[this.currentBindingSetting] = e.code;
-                    this.saveSettings('aimbaeshiro_hotkeys', this.hotkeys);
+            if (this.isBindingHotkey) {
+                e.preventDefault(); e.stopPropagation();
+                if (e.code === 'Escape') { this.hideHotkeyModal(); return; }
+                if (Object.values(this.hotkeys).includes(e.code)) { this.notify({ title: "Hotkey Error", message: "Key already assigned!"}); return; }
+                this.hotkeys[this.currentBindingSetting] = e.code;
+                this.saveSettings('aimbaeshiro_hotkeys', this.hotkeys);
 
-                    const menu = document.querySelector('.anonimbiri-menu-container');
-                    if(menu) {
-                        const btn = menu.querySelector(`.anonimbiri-hotkey[data-hotkey="${this.currentBindingSetting}"]`);
-                        if(btn) btn.textContent = e.code.replace('Key', '').replace('Digit', '');
-                    }
-
-                    this.hideHotkeyModal();
-                    return;
+                const menu = document.querySelector('.anonimbiri-menu-container');
+                if(menu) {
+                    const btn = menu.querySelector(`.anonimbiri-hotkey[data-hotkey="${this.currentBindingSetting}"]`);
+                    if(btn) btn.textContent = e.code.replace('Key', '').replace('Digit', '');
                 }
 
-                const action = Object.keys(this.hotkeys).find(key => this.hotkeys[key] === e.code);
-                if (action) {
-                    if (action === 'toggleMenu') { this.showGUI(); }
-                    else if (this.settings.hasOwnProperty(action)) {
-                        this.settings[action] = !this.settings[action];
-                        this.saveSettings('aimbaeshiro_settings', this.settings);
-                        this.notify({ title: "Toggled", message: `${action.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: ${this.settings[action] ? 'ON' : 'OFF'}`});
-                        const menu = document.querySelector('.anonimbiri-menu-container');
-                        if (menu) {
-                            const item = menu.querySelector(`.anonimbiri-menu-item[data-setting="${action}"]`);
-                            if (item) {
-                                item.classList.toggle('active', this.settings[action]);
-                                const toggle = item.querySelector('.anonimbiri-toggle-switch');
-                                if (toggle) toggle.classList.toggle('active', this.settings[action]);
-                            }
+                this.hideHotkeyModal();
+                return;
+            }
+
+            const action = Object.keys(this.hotkeys).find(key => this.hotkeys[key] === e.code);
+            if (action) {
+                if (action === 'toggleMenu') { this.showGUI(); }
+                else if (this.settings.hasOwnProperty(action)) {
+                    this.settings[action] = !this.settings[action];
+                    this.saveSettings('aimbaeshiro_settings', this.settings);
+                    this.notify({ title: "Toggled", message: `${action.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: ${this.settings[action] ? 'ON' : 'OFF'}`});
+                    const menu = document.querySelector('.anonimbiri-menu-container');
+                    if (menu) {
+                        const item = menu.querySelector(`.anonimbiri-menu-item[data-setting="${action}"]`);
+                        if (item) {
+                            item.classList.toggle('active', this.settings[action]);
+                            const toggle = item.querySelector('.anonimbiri-toggle-switch');
+                            if (toggle) toggle.classList.toggle('active', this.settings[action]);
                         }
                     }
                 }
-            });
-            window.addEventListener('keyup', (e) => { this.pressedKeys.delete(e.code); });
+            }
+        });
+        window.addEventListener('keyup', (e) => { this.pressedKeys.delete(e.code); });
+    }
+
+    showHotkeyModal(settingName) {
+        if (!this.hotkeyModal) return;
+        this.isBindingHotkey = true; this.currentBindingSetting = settingName;
+        const featureNameEl = document.getElementById('anonimbiri-hotkeyFeatureName');
+        if (featureNameEl) featureNameEl.textContent = settingName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+        this.hotkeyModal.classList.add('active');
+    }
+
+    hideHotkeyModal() { if (!this.hotkeyModal) return; this.isBindingHotkey = false; this.currentBindingSetting = null; this.hotkeyModal.classList.remove('active'); }
+
+    isDefined(val) { return val !== undefined && val !== null; }
+    isTeam(player) { return this.me && this.me.team ? this.me.team === player.team : false; }
+    getDistance(p1, p2) { return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2)); }
+    getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
+    getXDirection(t,e,o,i,s,n){const r=s-e,a=this.getDistance({x:t,y:e,z:o},{x:i,y:s,z:n});return Math.asin(r/a)}
+
+    containsPoint(point) {
+        let planes = this.renderer.frustum.planes;
+        for (let i = 0; i < 6; i ++) {
+            if (planes[i].distanceToPoint(point) < 0) {
+                return false;
+            }
         }
+        return true;
+    }
 
-        showHotkeyModal(settingName) {
-            if (!this.hotkeyModal) return;
-            this.isBindingHotkey = true; this.currentBindingSetting = settingName;
-            const featureNameEl = document.getElementById('anonimbiri-hotkeyFeatureName');
-            if (featureNameEl) featureNameEl.textContent = settingName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-            this.hotkeyModal.classList.add('active');
-        }
+    lineInRect(lx1, lz1, ly1, dx, dz, dy, x1, z1, y1, x2, z2, y2) {
+        let t1 = (x1 - lx1) * dx;
+        let t2 = (x2 - lx1) * dx;
+        let t3 = (y1 - ly1) * dy;
+        let t4 = (y2 - ly1) * dy;
+        let t5 = (z1 - lz1) * dz;
+        let t6 = (z2 - lz1) * dz;
+        let tmin = Math.max(Math.max(Math.min(t1, t2), Math.min(t3, t4)), Math.min(t5, t6));
+        let tmax = Math.min(Math.min(Math.max(t1, t2), Math.max(t3, t4)), Math.max(t5, t6));
+        if (tmax < 0) return false;
+        if (tmin > tmax) return false;
+        return tmin;
+    }
 
-        hideHotkeyModal() { if (!this.hotkeyModal) return; this.isBindingHotkey = false; this.currentBindingSetting = null; this.hotkeyModal.classList.remove('active'); }
+    getCanSee(player, boxSize) {
+        const from = this.me;
+        if (!from || !this.game?.map?.manager?.objects) return true;
 
-        isDefined(val) { return val !== undefined && val !== null; }
-        isTeam(player) { return this.me && this.me.team ? this.me.team === player.team : false; }
-        getDistance(p1, p2) { return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2)); }
-        getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
-        getXDirection(t,e,o,i,s,n){const r=s-e,a=this.getDistance({x:t,y:e,z:o},{x:i,y:s,z:n});return Math.asin(r/a)}
+        const weaponInfo = this.game.weaponConfig[this.me.loadout[this.me.loadoutIndex]];
+        const weaponPiercePower = weaponInfo?.pierce || 0;
 
-        containsPoint(point) {
-            let planes = this.renderer.frustum.planes;
-            for (let i = 0; i < 6; i ++) {
-                if (planes[i].distanceToPoint(point) < 0) {
+        boxSize = boxSize || 0;
+        const toX = player.x, toY = player.y, toZ = player.z;
+        let penetrableWallsHit = 0;
+
+        for (let obj, dist = this.getDistance(from, player), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(this.getDistance({x: from.x, y: 0, z: from.z}, {x: toX, y: 0, z: toZ}), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
+            let tmpDst;
+            if (
+                !(obj = this.game.map.manager.objects[i]).noShoot && obj.active && obj.transparent !== false &&
+                (tmpDst = this.lineInRect(from.x, from.z, yOffset, dx, dz, dy, obj.x - Math.max(0, obj.width - boxSize), obj.z - Math.max(0, obj.length - boxSize), obj.y - Math.max(0, obj.height - boxSize), obj.x + Math.max(0, obj.width - boxSize), obj.z + Math.max(0, obj.length - boxSize), obj.y + Math.max(0, obj.height - boxSize))) &&
+                1 > tmpDst
+            ) {
+                if (!this.settings.aimbotWallBangs || !obj.penetrable || !this.me.weapon.pierce) {
                     return false;
                 }
+                penetrableWallsHit++;
             }
-            return true;
+        }
+        return penetrableWallsHit <= 1;
+    }
+
+    async waitFor(condition, timeout = Infinity) {
+        const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+        return new Promise(async (resolve, reject) => {
+            if (typeof timeout != 'number') reject('Timeout argument not a number in waitFor');
+            let result;
+            while (result === undefined || result === false || result === null || result.length === 0) {
+                if ((timeout -= 100) < 0) { resolve(false); return; }
+                await sleep(100);
+                result = typeof condition === 'string' ? Function(condition)() : condition();
+            }
+            resolve(result);
+        });
+    }
+
+    lookDir(xDire, yDire) {
+        this.controls.object.rotation.y = yDire
+        this.controls[this.vars.pchObjc].rotation.x = xDire;
+        this.controls[this.vars.pchObjc].rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.controls[this.vars.pchObjc].rotation.x));
+        this.controls.yDr = (this.controls[this.vars.pchObjc].rotation.x % Math.PI).round(3);
+        this.controls.xDr = (this.controls.object.rotation.y % Math.PI).round(3);
+        this.renderer.camera.updateProjectionMatrix();
+        this.renderer.updateFrustum();
+    }
+
+    resetLookAt() {
+        this.controls.yDr = this.controls[this.vars.pchObjc].rotation.x;
+        this.controls.xDr = this.controls.object.rotation.y;
+        this.renderer.camera.updateProjectionMatrix();
+        this.renderer.updateFrustum();
+    }
+
+    world2Screen(worldPosition) {
+        if (!this.renderer?.camera || !this.overlay?.canvas) return null;
+        const pos = worldPosition.clone(); pos.project(this.renderer.camera);
+        if (pos.z > 1) return null;
+        return { x: (pos.x + 1) / 2 * this.overlay.canvas.width, y: (-pos.y + 1) / 2 * this.overlay.canvas.height, };
+    }
+
+    drawCanvasESP(player, isBot, CRC2d) {
+        if (this.settings.espTeamCheck && this.isTeam(player)) return;
+
+        const playerPos = new this.three.Vector3(player.x, player.y, player.z);
+        const effectiveHeight = isBot ? player.dat.mSize : (player.height || this.PLAYER_HEIGHT) - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
+        const halfWidth = isBot ? (player.dat.mSize * 0.4) / 2 : this.PLAYER_WIDTH / 2;
+
+        const corners = [
+            new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z - halfWidth),
+            new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z + halfWidth),
+            new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth),
+            new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth),
+        ];
+
+        let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity, onScreen = false;
+        for (const corner of corners) {
+            const screenPos = this.world2Screen(corner);
+            if (screenPos) { onScreen = true; xmin = Math.min(xmin, screenPos.x); xmax = Math.max(xmax, screenPos.x); ymin = Math.min(ymin, screenPos.y); ymax = Math.max(ymax, screenPos.y); }
         }
 
-        lineInRect(lx1, lz1, ly1, dx, dz, dy, x1, z1, y1, x2, z2, y2) {
-            let t1 = (x1 - lx1) * dx;
-            let t2 = (x2 - lx1) * dx;
-            let t3 = (y1 - ly1) * dy;
-            let t4 = (y2 - ly1) * dy;
-            let t5 = (z1 - lz1) * dz;
-            let t6 = (z2 - lz1) * dz;
-            let tmin = Math.max(Math.max(Math.min(t1, t2), Math.min(t3, t4)), Math.min(t5, t6));
-            let tmax = Math.min(Math.min(Math.max(t1, t2), Math.max(t3, t4)), Math.max(t5, t6));
-            if (tmax < 0) return false;
-            if (tmin > tmax) return false;
-            return tmin;
+        if (!onScreen || !isFinite(xmin + xmax + ymin + ymax)) return;
+
+        const boxWidth = xmax - xmin;
+        const boxHeight = ymax - ymin;
+
+        CRC2d.save.apply(this.ctx, []);
+
+        if (this.settings.espLines) {
+            const startX = this.overlay.canvas.width / 2, startY = this.overlay.canvas.height, endX = xmin + boxWidth / 2, endY = ymax, trailColor = isBot ? this.settings.botColor : this.settings.espColor;
+            const hexToRgba = (hex, alpha) => { let r=0,g=0,b=0; if (hex.length == 7) { r=parseInt(hex.slice(1,3),16); g=parseInt(hex.slice(3,5),16); b=parseInt(hex.slice(5,7),16); } return `rgba(${r},${g},${b},${alpha})`; };
+            const gradient = this.ctx.createLinearGradient(startX, startY, endX, endY);
+            gradient.addColorStop(0, hexToRgba(trailColor, 0.7)); gradient.addColorStop(1, hexToRgba(trailColor, 0));
+            this.ctx.lineWidth = 2.5; this.ctx.strokeStyle = gradient; this.ctx.shadowColor = trailColor; this.ctx.shadowBlur = 15;
+            CRC2d.beginPath.apply(this.ctx, []);
+            CRC2d.moveTo.apply(this.ctx, [startX, startY]);
+            CRC2d.lineTo.apply(this.ctx, [endX, endY]);
+            CRC2d.stroke.apply(this.ctx, []);
         }
 
-        getCanSee(player, boxSize) {
-            const from = this.me;
-            if (!from || !this.game?.map?.manager?.objects) return true;
+        if (this.settings.espSquare) {
+            this.ctx.shadowColor = this.settings.boxColor; this.ctx.shadowBlur = 10; this.ctx.lineWidth = 1.5; this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
+            CRC2d.strokeRect.apply(this.ctx, [xmin, ymin, boxWidth, boxHeight]);
+        }
 
-            const weaponInfo = this.game.weaponConfig[this.me.loadout[this.me.loadoutIndex]];
-            const weaponPiercePower = weaponInfo?.pierce || 0;
+        if (player.health && player.maxHealth) {
+            const healthPercentage = Math.max(0, player.health / player.maxHealth);
+            const barX = xmin - 7;
+            const barY = ymin;
+            const barWidth = 4;
+            const barHeight = boxHeight;
 
-            boxSize = boxSize || 0;
-            const toX = player.x, toY = player.y, toZ = player.z;
-            let penetrableWallsHit = 0;
+            this.ctx.fillStyle = "rgba(0,0,0,0.5)";
+            CRC2d.fillRect.apply(this.ctx, [barX, barY, barWidth, barHeight]);
 
-            for (let obj, dist = this.getDistance(from, player), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(this.getDistance({x: from.x, y: 0, z: from.z}, {x: toX, y: 0, z: toZ}), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
-                let tmpDst;
-                if (
-                    !(obj = this.game.map.manager.objects[i]).noShoot && obj.active && obj.transparent !== false &&
-                    (tmpDst = this.lineInRect(from.x, from.z, yOffset, dx, dz, dy, obj.x - Math.max(0, obj.width - boxSize), obj.z - Math.max(0, obj.length - boxSize), obj.y - Math.max(0, obj.height - boxSize), obj.x + Math.max(0, obj.width - boxSize), obj.z + Math.max(0, obj.length - boxSize), obj.y + Math.max(0, obj.height - boxSize))) &&
-                    1 > tmpDst
-                ) {
-                    if (!this.settings.aimbotWallBangs || !obj.penetrable || !this.me.weapon.pierce) {
-                        return false;
-                    }
-                    penetrableWallsHit++;
+            this.ctx.fillStyle = healthPercentage > 0.75 ? "#43A047" : healthPercentage > 0.4 ? "#FDD835" : "#E53935";
+            CRC2d.fillRect.apply(this.ctx, [barX, barY + barHeight * (1-healthPercentage), barWidth, barHeight * healthPercentage]);
+
+            const healthText = `♥ ${Math.round(player.health)}`;
+            this.ctx.font = "bold 11px Rajdhani, sans-serif";
+            this.ctx.textAlign = "right";
+            this.ctx.fillStyle = "#FFFFFF";
+            this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
+            CRC2d.fillText.apply(this.ctx, [healthText, barX - 4, barY + 11]);
+        }
+
+        if (this.settings.espNameTags) {
+            this.ctx.font = "bold 11px Rajdhani, sans-serif";
+            this.ctx.textAlign = "left";
+
+            const padding = 4;
+            const iconHeight = 16;
+            const borderRadius = 4;
+            let iconWidth = 0;
+            const hasWeapon = player.weapon && player.weapon.name;
+
+            let weaponIcon = null;
+            if (hasWeapon && this.settings.espWeaponIcons && player.weapon.icon) {
+                if (!this.weaponIconCache) this.weaponIconCache = {};
+                if (!this.weaponIconCache[player.weapon.icon]) {
+                    this.weaponIconCache[player.weapon.icon] = new Image();
+                    this.weaponIconCache[player.weapon.icon].src = `https://assets.krunker.io/textures/weapons/${player.weapon.icon}.png`;
+                }
+                weaponIcon = this.weaponIconCache[player.weapon.icon];
+                if (weaponIcon.complete && weaponIcon.naturalWidth > 0) {
+                    iconWidth = weaponIcon.width * (iconHeight / weaponIcon.height);
                 }
             }
-            return penetrableWallsHit <= 1;
-        }
 
-        async waitFor(condition, timeout = Infinity) {
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-            return new Promise(async (resolve, reject) => {
-                if (typeof timeout != 'number') reject('Timeout argument not a number in waitFor');
-                let result;
-                while (result === undefined || result === false || result === null || result.length === 0) {
-                    if ((timeout -= 100) < 0) { resolve(false); return; }
-                    await sleep(100);
-                    result = typeof condition === 'string' ? Function(condition)() : condition();
-                }
-                resolve(result);
-            });
-        }
+            const namePart = isBot ? `[AI] ${player.name || 'Bot'}` : player.level ? `[LVL ${player.level}] ${player.name || 'Player'}` : `${player.name || 'Player'}`;
+            const weaponPart = hasWeapon ? ` • ${player.weapon.name}` : '';
+            const fullText = namePart + weaponPart;
+            const fullTextWidth = this.ctx.measureText(fullText).width;
 
-        lookDir(xDire, yDire) {
-            this.controls.object.rotation.y = yDire
-            this.controls.pchObjc.rotation.x = xDire;
-            this.controls.pchObjc.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.controls.pchObjc.rotation.x));
-            this.controls.yDr = (this.controls.pchObjc.rotation.x % Math.PI).round(3);
-            this.controls.xDr = (this.controls.object.rotation.y % Math.PI).round(3);
-            this.renderer.camera.updateProjectionMatrix();
-            this.renderer.updateFrustum();
-        }
+            const infoBoxWidth = fullTextWidth + (iconWidth > 0 ? iconWidth + padding : 0) + padding * 2;
+            const infoBoxHeight = 20;
+            const infoBoxX = (xmin + boxWidth / 2) - (infoBoxWidth / 2);
+            const infoBoxY = ymin - infoBoxHeight - 5;
 
-        resetLookAt() {
-            this.controls.yDr = this.controls.pchObjc.rotation.x;
-            this.controls.xDr = this.controls.object.rotation.y;
-            this.renderer.camera.updateProjectionMatrix();
-            this.renderer.updateFrustum();
-        }
-
-        world2Screen(worldPosition) {
-            if (!this.renderer?.camera || !this.overlay?.canvas) return null;
-            const pos = worldPosition.clone(); pos.project(this.renderer.camera);
-            if (pos.z > 1) return null;
-            return { x: (pos.x + 1) / 2 * this.overlay.canvas.width, y: (-pos.y + 1) / 2 * this.overlay.canvas.height, };
-        }
-
-        drawCanvasESP(player, isBot, CRC2d) {
-            if (this.settings.espTeamCheck && this.isTeam(player)) return;
-
-            const playerPos = new this.three.Vector3(player.x, player.y, player.z);
-            const effectiveHeight = isBot ? player.dat.mSize : (player.height || this.PLAYER_HEIGHT) - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
-            const halfWidth = isBot ? (player.dat.mSize * 0.4) / 2 : this.PLAYER_WIDTH / 2;
-
-            const corners = [
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z - halfWidth),
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z + halfWidth),
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth),
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth),
-            ];
-
-            let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity, onScreen = false;
-            for (const corner of corners) {
-                const screenPos = this.world2Screen(corner);
-                if (screenPos) { onScreen = true; xmin = Math.min(xmin, screenPos.x); xmax = Math.max(xmax, screenPos.x); ymin = Math.min(ymin, screenPos.y); ymax = Math.max(ymax, screenPos.y); }
-            }
-
-            if (!onScreen || !isFinite(xmin + xmax + ymin + ymax)) return;
-
-            const boxWidth = xmax - xmin;
-            const boxHeight = ymax - ymin;
-
-            CRC2d.save.apply(this.ctx, []);
-
-            if (this.settings.espLines) {
-                const startX = this.overlay.canvas.width / 2, startY = this.overlay.canvas.height, endX = xmin + boxWidth / 2, endY = ymax, trailColor = isBot ? this.settings.botColor : this.settings.espColor;
-                const hexToRgba = (hex, alpha) => { let r=0,g=0,b=0; if (hex.length == 7) { r=parseInt(hex.slice(1,3),16); g=parseInt(hex.slice(3,5),16); b=parseInt(hex.slice(5,7),16); } return `rgba(${r},${g},${b},${alpha})`; };
-                const gradient = this.ctx.createLinearGradient(startX, startY, endX, endY);
-                gradient.addColorStop(0, hexToRgba(trailColor, 0.7)); gradient.addColorStop(1, hexToRgba(trailColor, 0));
-                this.ctx.lineWidth = 2.5; this.ctx.strokeStyle = gradient; this.ctx.shadowColor = trailColor; this.ctx.shadowBlur = 15;
+            if (this.settings.espInfoBackground) {
+                this.ctx.fillStyle = "rgba(25, 10, 30, 0.55)";
+                this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
+                this.ctx.lineWidth = 1;
+                this.ctx.shadowColor = isBot ? this.settings.botColor : this.settings.boxColor;
+                this.ctx.shadowBlur = 6;
                 CRC2d.beginPath.apply(this.ctx, []);
-                CRC2d.moveTo.apply(this.ctx, [startX, startY]);
-                CRC2d.lineTo.apply(this.ctx, [endX, endY]);
+                CRC2d.moveTo.apply(this.ctx, [infoBoxX + borderRadius, infoBoxY]);
+                CRC2d.lineTo.apply(this.ctx, [infoBoxX + infoBoxWidth - borderRadius, infoBoxY]);
+                CRC2d.arcTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY, infoBoxX + infoBoxWidth, infoBoxY + borderRadius, borderRadius]);
+                CRC2d.lineTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY + infoBoxHeight - borderRadius]);
+                CRC2d.arcTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY + infoBoxHeight, infoBoxX + infoBoxWidth - borderRadius, infoBoxY + infoBoxHeight, borderRadius]);
+                CRC2d.lineTo.apply(this.ctx, [infoBoxX + borderRadius, infoBoxY + infoBoxHeight]);
+                CRC2d.arcTo.apply(this.ctx, [infoBoxX, infoBoxY + infoBoxHeight, infoBoxX, infoBoxY + infoBoxHeight - borderRadius, borderRadius]);
+                CRC2d.lineTo.apply(this.ctx, [infoBoxX, infoBoxY + borderRadius]);
+                CRC2d.arcTo.apply(this.ctx, [infoBoxX, infoBoxY, infoBoxX + borderRadius, infoBoxY, borderRadius]);
+                CRC2d.closePath.apply(this.ctx, []);
+                CRC2d.fill.apply(this.ctx, []);
                 CRC2d.stroke.apply(this.ctx, []);
             }
 
-            if (this.settings.espSquare) {
-                this.ctx.shadowColor = this.settings.boxColor; this.ctx.shadowBlur = 10; this.ctx.lineWidth = 1.5; this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
-                CRC2d.strokeRect.apply(this.ctx, [xmin, ymin, boxWidth, boxHeight]);
+            this.ctx.fillStyle = "#FFFFFF";
+            if (this.settings.espInfoBackground) {
+                this.ctx.shadowColor = '#ff008080';
+                this.ctx.shadowBlur = 4;
+            } else {
+                this.ctx.shadowColor = '#000000';
+                this.ctx.shadowBlur = 5;
             }
+            CRC2d.fillText.apply(this.ctx, [fullText, infoBoxX + padding, infoBoxY + infoBoxHeight / 2 + 4]);
 
-            if (player.health && player.maxHealth) {
-                const healthPercentage = Math.max(0, player.health / player.maxHealth);
-                const barX = xmin - 7;
-                const barY = ymin;
-                const barWidth = 4;
-                const barHeight = boxHeight;
-
-                this.ctx.fillStyle = "rgba(0,0,0,0.5)";
-                CRC2d.fillRect.apply(this.ctx, [barX, barY, barWidth, barHeight]);
-
-                this.ctx.fillStyle = healthPercentage > 0.75 ? "#43A047" : healthPercentage > 0.4 ? "#FDD835" : "#E53935";
-                CRC2d.fillRect.apply(this.ctx, [barX, barY + barHeight * (1-healthPercentage), barWidth, barHeight * healthPercentage]);
-
-                const healthText = `♥ ${Math.round(player.health)}`;
-                this.ctx.font = "bold 11px Rajdhani, sans-serif";
-                this.ctx.textAlign = "right";
-                this.ctx.fillStyle = "#FFFFFF";
-                this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
-                CRC2d.fillText.apply(this.ctx, [healthText, barX - 4, barY + 11]);
+            if (weaponIcon && weaponIcon.complete && iconWidth > 0) {
+                const iconX = infoBoxX + padding + fullTextWidth + padding;
+                const iconY = infoBoxY + (infoBoxHeight - iconHeight) / 2;
+                this.ctx.drawImage(weaponIcon, iconX, iconY, iconWidth, iconHeight);
             }
+            this.ctx.shadowBlur = 0;
 
-            if (this.settings.espNameTags) {
-                this.ctx.font = "bold 11px Rajdhani, sans-serif";
-                this.ctx.textAlign = "left";
-
-                const padding = 4;
-                const iconHeight = 16;
-                const borderRadius = 4;
-                let iconWidth = 0;
-                const hasWeapon = player.weapon && player.weapon.name;
-
-                let weaponIcon = null;
-                if (hasWeapon && this.settings.espWeaponIcons && player.weapon.icon) {
-                    if (!this.weaponIconCache) this.weaponIconCache = {};
-                    if (!this.weaponIconCache[player.weapon.icon]) {
-                        this.weaponIconCache[player.weapon.icon] = new Image();
-                        this.weaponIconCache[player.weapon.icon].src = `https://assets.krunker.io/textures/weapons/${player.weapon.icon}.png`;
-                    }
-                    weaponIcon = this.weaponIconCache[player.weapon.icon];
-                    if (weaponIcon.complete && weaponIcon.naturalWidth > 0) {
-                        iconWidth = weaponIcon.width * (iconHeight / weaponIcon.height);
-                    }
-                }
-
-                const namePart = isBot ? `[AI] ${player.name || 'Bot'}` : player.level ? `[LVL ${player.level}] ${player.name || 'Player'}` : `${player.name || 'Player'}`;
-                const weaponPart = hasWeapon ? ` • ${player.weapon.name}` : '';
-                const fullText = namePart + weaponPart;
-                const fullTextWidth = this.ctx.measureText(fullText).width;
-
-                const infoBoxWidth = fullTextWidth + (iconWidth > 0 ? iconWidth + padding : 0) + padding * 2;
-                const infoBoxHeight = 20;
-                const infoBoxX = (xmin + boxWidth / 2) - (infoBoxWidth / 2);
-                const infoBoxY = ymin - infoBoxHeight - 5;
-
-                if (this.settings.espInfoBackground) {
-                    this.ctx.fillStyle = "rgba(25, 10, 30, 0.55)";
-                    this.ctx.strokeStyle = isBot ? this.settings.botColor : this.settings.boxColor;
-                    this.ctx.lineWidth = 1;
-                    this.ctx.shadowColor = isBot ? this.settings.botColor : this.settings.boxColor;
-                    this.ctx.shadowBlur = 6;
-                    CRC2d.beginPath.apply(this.ctx, []);
-                    CRC2d.moveTo.apply(this.ctx, [infoBoxX + borderRadius, infoBoxY]);
-                    CRC2d.lineTo.apply(this.ctx, [infoBoxX + infoBoxWidth - borderRadius, infoBoxY]);
-                    CRC2d.arcTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY, infoBoxX + infoBoxWidth, infoBoxY + borderRadius, borderRadius]);
-                    CRC2d.lineTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY + infoBoxHeight - borderRadius]);
-                    CRC2d.arcTo.apply(this.ctx, [infoBoxX + infoBoxWidth, infoBoxY + infoBoxHeight, infoBoxX + infoBoxWidth - borderRadius, infoBoxY + infoBoxHeight, borderRadius]);
-                    CRC2d.lineTo.apply(this.ctx, [infoBoxX + borderRadius, infoBoxY + infoBoxHeight]);
-                    CRC2d.arcTo.apply(this.ctx, [infoBoxX, infoBoxY + infoBoxHeight, infoBoxX, infoBoxY + infoBoxHeight - borderRadius, borderRadius]);
-                    CRC2d.lineTo.apply(this.ctx, [infoBoxX, infoBoxY + borderRadius]);
-                    CRC2d.arcTo.apply(this.ctx, [infoBoxX, infoBoxY, infoBoxX + borderRadius, infoBoxY, borderRadius]);
-                    CRC2d.closePath.apply(this.ctx, []);
-                    CRC2d.fill.apply(this.ctx, []);
-                    CRC2d.stroke.apply(this.ctx, []);
-                }
-
-                this.ctx.fillStyle = "#FFFFFF";
-                if (this.settings.espInfoBackground) {
-                    this.ctx.shadowColor = '#ff008080';
-                    this.ctx.shadowBlur = 4;
-                } else {
-                    this.ctx.shadowColor = '#000000';
-                    this.ctx.shadowBlur = 5;
-                }
-                CRC2d.fillText.apply(this.ctx, [fullText, infoBoxX + padding, infoBoxY + infoBoxHeight / 2 + 4]);
-
-                if (weaponIcon && weaponIcon.complete && iconWidth > 0) {
-                    const iconX = infoBoxX + padding + fullTextWidth + padding;
-                    const iconY = infoBoxY + (infoBoxHeight - iconHeight) / 2;
-                    this.ctx.drawImage(weaponIcon, iconX, iconY, iconWidth, iconHeight);
-                }
-                this.ctx.shadowBlur = 0;
-
-                const distance = Math.round(this.getDistance(this.me, player) / 10);
-                const distanceText = `[${distance}m]`;
-                this.ctx.textAlign = "center";
-                this.ctx.fillStyle = "#FFFFFF";
-                this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
-                CRC2d.fillText.apply(this.ctx, [distanceText, xmin + boxWidth / 2, ymax + 14]);
-            }
-            CRC2d.restore.apply(this.ctx, []);
+            const distance = Math.round(this.getDistance(this.me, player) / 10);
+            const distanceText = `[${distance}m]`;
+            this.ctx.textAlign = "center";
+            this.ctx.fillStyle = "#FFFFFF";
+            this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
+            CRC2d.fillText.apply(this.ctx, [distanceText, xmin + boxWidth / 2, ymax + 14]);
         }
+        CRC2d.restore.apply(this.ctx, []);
     }
+}
 
-    new AimbaeShiro();
-};
-
-let tokenPromiseResolve;
-const tokenPromise = new Promise((resolve) => (tokenPromiseResolve = resolve));
-const ifr = document.createElement('iframe');
-ifr.src = location.origin + '/' + (window.location.search ? window.location.search : '');
-ifr.style.display = 'none';
-document.documentElement.append(ifr);
-const ifrFetch = ifr.contentWindow.fetch;
-Object.defineProperty(ifr.contentWindow, 'fetch', {
-    get() {
-        if (ifr.contentWindow?.windows?.length > 0) {
-            return function (url) { if (typeof url === 'string' && url.includes('/seek-game')) { ifr.remove(); tokenPromiseResolve(url); return; } return ifrFetch.apply(this, arguments); };
-        }
-        return ifrFetch;
-    },
-});
-const _fetch = window.fetch;
-window.fetch = async function (url, options) { if (typeof url === 'string' && url.includes('/seek-game')) { url = await tokenPromise; } return _fetch.apply(this, arguments); };
-function downloadFileSync(url) { var req = new XMLHttpRequest(); req.open('GET', url, false); req.send(); if (req.status === 200) { return req.response; } return null; }
-const observer = new MutationObserver(function (mutations) {
-    for (const mutation of mutations) {
-        if (mutation.addedNodes) {
-            for (const node of mutation.addedNodes) {
-                if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
-                    node.remove(); observer.disconnect();
-                    const modifiedGameScript = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`)
-                    .replace(/if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, '/* Anticheat Removed By Anonimbiri */')
-                    .replace(/for\s*\(var.*?windows\.length.*?\)\s*\{[\s\S]*?\}/, '/* Anticheat Removed By Anonimbiri */');
-                    if (modifiedGameScript) {
-                        window.addEventListener('load', () => { Function(cheatInstanceId + '();\n\n' + modifiedGameScript)(); });
-                    } else { console.error("🌸 AimbaeShiro: Failed to download modified game script."); }
-                    return;
-                }
-            }
-        }
-    }
-});
-observer.observe(document, { childList: true, subtree: true });
+new AimbaeShiro();
