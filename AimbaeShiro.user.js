@@ -309,11 +309,16 @@ class AimbaeShiro {
 
     patchGameScript(script) {
         const entries = {
+            isYou: { regex: /(?:this\.\w+\s*=\s*true;)\s*this\.(\w+)\s*=\s*[^;]+;(?:\s*this\.\w+\s*=\s*[^;]+;){5}\s*this\.\w+\s*=\s*null;/s, index: 1 },
             pchObjc: { regex: /this\.([^\s=]+)\s*=\s*new\s+[^\s]+\.Object3D\(\)/u, index: 1 },
+            inView: { regex: /([^\s=.]+)\.([^\s=]+)\s*=\s*\([^;]+;\s*if\s*\(\1\.latestData\)/s, index: 2 },
+            procInputs: { regex: /for\s*\(\s*var\s+[^\s=]+\s*=\s*0;\s*[^\s<]+\s*<\s*this\.[^;]+;\s*\+\+[^\s)]+\s*\)\s*{\s*this\.([^\s(]+)\([^)]+\);\s*}\s*this\.[^\s(]+\(\);/s, index: 1 },
+            weaponIndex: { regex: /}\s*else\s*{\s*this\.[^\s=\[]+\[this\.([^\s=\]]+)\]\s*=\s*[^;]+;\s*}\s*[^.\s]+\.updatePlayerAmmo\(this\);/s, index: 1 },
             respawnT: { regex: /(:\s*)\(parseFloat\([^)]+\)\s*\|\|\s*0\)\s*\*\s*1000/g, patch: `$10` },
             anticheat1: { regex: /if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
             anticheat2: { regex: /for\s*\(var.*?windows\.length.*?\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
             commandline: { regex: /Object\.defineProperty\(console,\s*['_"]_commandLineAPI['_"][\s\S]*?}\);?/g, patch: "/* Antidebug removed by anonimbiri */" },
+            typeError: {regex: /throw new TypeError/g, patch: "console.error"},
             error: { regex: /throw new Error/g, patch: "console.error" },
         };
 
@@ -581,7 +586,7 @@ class AimbaeShiro {
             this.socket.send('k', 0);
         }
 
-        if (this.settings.autoReload && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && this.me.ammos[this.me.weapon.secondary ? 1 : 0] === 0 && this.me.reloadTimer === 0) {
+        if (this.settings.autoReload && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && this.me.ammos[this.me[this.vars.weaponIndex]] === 0 && this.me.reloadTimer === 0) {
             this.game.players.reload(this.me);
             inputPacket[gameInputIndices.reload] = 1;
         }
@@ -776,11 +781,11 @@ class AimbaeShiro {
              .anonimbiri-notify-action-btn:hover{background:#ff0080;transform:scale(1.05)}
              `;
 
-        const style = document.createElement('style');
-        style.textContent = menuCSS;
-        document.head.appendChild(style);
+    const style = document.createElement('style');
+    style.textContent = menuCSS;
+    document.head.appendChild(style);
 
-        const hotkeyModalHTML = `
+    const hotkeyModalHTML = `
              <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
                  <div class="anonimbiri-hotkey-content">
                      <h2>Assign Hotkey</h2>
@@ -788,37 +793,37 @@ class AimbaeShiro {
                      <p>(Press ESC to cancel)</p>
                  </div>
              </div>`;
-        const modalContainer = document.createElement('div');
-        modalContainer.innerHTML = hotkeyModalHTML;
-        document.body.appendChild(modalContainer);
-        this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
+    const modalContainer = document.createElement('div');
+    modalContainer.innerHTML = hotkeyModalHTML;
+    document.body.appendChild(modalContainer);
+    this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-        this.GUI.windowIndex = window.windows.length + 1;
-        this.GUI.windowObj = {
-            closed: false,
-            header: "🌸 AimbaeShiro 🌸",
-            html: "",
-            extraCls: "anonimbiri-menu-container",
-            gen: () => this.getGuiHtml(),
-            hideScroll: true,
-            height: 'calc(100% - 300px)',
-            width: 500,
-        };
+    this.GUI.windowIndex = window.windows.length + 1;
+    this.GUI.windowObj = {
+        closed: false,
+        header: "🌸 AimbaeShiro 🌸",
+        html: "",
+        extraCls: "anonimbiri-menu-container",
+        gen: () => this.getGuiHtml(),
+        hideScroll: true,
+        height: 'calc(100% - 300px)',
+        width: 500,
+    };
 
-        Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
+    Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
 
-        this.waitFor(() => window.menuItemContainer).then(menu => {
-            if (menu && !document.getElementById('shiro-menu-button')) {
-                const btn = document.createElement("div");
-                btn.id = 'shiro-menu-button';
-                btn.className = "menuItem";
-                btn.innerHTML = ``;
-                btn.addEventListener("click", () => this.showGUI());
-                btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
-                menu.prepend(btn);
-            }
-        });
-    }
+    this.waitFor(() => window.menuItemContainer).then(menu => {
+        if (menu && !document.getElementById('shiro-menu-button')) {
+            const btn = document.createElement("div");
+            btn.id = 'shiro-menu-button';
+            btn.className = "menuItem";
+            btn.innerHTML = ``;
+            btn.addEventListener("click", () => this.showGUI());
+            btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
+            menu.prepend(btn);
+        }
+    });
+}
 
     getGuiHtml() {
         const neonIcons = {
@@ -1139,8 +1144,8 @@ class AimbaeShiro {
         const from = this.me;
         if (!from || !this.game?.map?.manager?.objects) return true;
 
-        const weaponInfo = this.game.weaponConfig[this.me.loadout[this.me.loadoutIndex]];
-        const weaponPiercePower = weaponInfo?.pierce || 0;
+        /*const weaponInfo = this.game.weaponConfig[this.me.loadout[this.vars.weaponIndex]];
+        const weaponPiercePower = weaponInfo?.pierce || 0;*/
 
         boxSize = boxSize || 0;
         const toX = player.x, toY = player.y, toZ = player.z;
