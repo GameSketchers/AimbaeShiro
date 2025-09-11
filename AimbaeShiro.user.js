@@ -4,7 +4,7 @@
 // @name:ja      AimbaeShiro – Krunker.IO チート
 // @name:az      AimbaeShiro – Krunker.IO Hilesi
 // @namespace    https://github.com/GameSketchers/AimbaeShiro
-// @version      1.5.3
+// @version      1.5.4
 // @description    Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -39,7 +39,7 @@ class AimbaeShiro {
         this.overlay = null;
         this.ctx = null;
         this.socket = null;
-        this.skins = null;
+        this.skinCache = {};
         this.playerMaps = [];
         this.scale = 1;
         this.three = null;
@@ -316,7 +316,7 @@ class AimbaeShiro {
             weaponIndex: { regex: /}\s*else\s*{\s*this\.[^\s=\[]+\[this\.([^\s=\]]+)\]\s*=\s*[^;]+;\s*}\s*[^.\s]+\.updatePlayerAmmo\(this\);/s, index: 1 },
             respawnT: { regex: /(:\s*)\(parseFloat\([^)]+\)\s*\|\|\s*0\)\s*\*\s*1000/g, patch: `$10` },
             anticheat1: { regex: /if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
-            anticheat2: { regex: /for\s*\(var.*?windows\.length.*?\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
+            //anticheat2: { regex: /for\s*\(var.*?windows\.length.*?\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
             commandline: { regex: /Object\.defineProperty\(console,\s*['_"]_commandLineAPI['_"][\s\S]*?}\);?/g, patch: "/* Antidebug removed by anonimbiri */" },
             typeError: {regex: /throw new TypeError/g, patch: "console.error"},
             error: { regex: /throw new Error/g, patch: "console.error" },
@@ -394,7 +394,7 @@ class AimbaeShiro {
                 set(skinsArray) {
                     this[originalSkinsSymbol] = skinsArray;
                     if (!this[localSkinsSymbol]) {
-                        this[localSkinsSymbol] = Array.apply(null, Array(5e3)).map((_, i) => { return { ind: i, cnt: 0x1, }});
+                        this[localSkinsSymbol] = Array.apply(null, Array(7208)).map((_, i) => { return { ind: i, cnt: 1, }});
                     }
                     return skinsArray;
                 },
@@ -415,11 +415,10 @@ class AimbaeShiro {
                                 if (type=="ah2") return;
                                 let data = message[0];
                                 if (type === 'en' && data) {
-                                    cheatInstance.skins = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17] };
+                                    cheatInstance.skinCache = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17], playerCard: data[32] };
                                 }
-                                if(type === 'spry' && data){
-                                    console.log(data);
-                                    cheatInstance.spray = data;
+                                if(cheatInstance.settings.unlockSkins && type === 'spry' && data && data !== 4577){
+                                    cheatInstance.skinCache.spray = data;
                                     message[0] = 4577;
                                 }
                                 return target.apply(thisArg, [type, ...message]);
@@ -443,17 +442,18 @@ class AimbaeShiro {
                                     while (playerData.length % playerStride !== 0) playerStride++;
                                     for (let i = 0; i < playerData.length; i += playerStride) {
                                         if (playerData[i] === cheatInstance.socket.socketId || 0) {
-                                            playerData[i + 12] = [cheatInstance.skins.main, cheatInstance.skins.secondary];
-                                            playerData[i + 13] = cheatInstance.skins.hat;
-                                            playerData[i + 14] = cheatInstance.skins.body;
-                                            playerData[i + 19] = cheatInstance.skins.knife;
-                                            playerData[i + 24] = cheatInstance.skins.dye;
-                                            playerData[i + 33] = cheatInstance.skins.waist;
+                                            playerData[i + 12] = [cheatInstance.skinCache.main, cheatInstance.skinCache.secondary];
+                                            playerData[i + 13] = cheatInstance.skinCache.hat;
+                                            playerData[i + 14] = cheatInstance.skinCache.body;
+                                            playerData[i + 19] = cheatInstance.skinCache.knife;
+                                            playerData[i + 24] = cheatInstance.skinCache.dye;
+                                            playerData[i + 33] = cheatInstance.skinCache.waist;
+                                            playerData[i + 43] = cheatInstance.skinCache.playerCard;
                                         }
                                     }
                                 }
                                 if (cheatInstance.settings.unlockSkins && eventName === 'sp') {
-                                    eventData[0][1] = cheatInstance.spray;
+                                    eventData[0][1] = cheatInstance.skinCache.spray;
                                 }
                                 return target.apply(thisArg, [eventName, ...eventData]);
                             }
@@ -781,11 +781,11 @@ class AimbaeShiro {
              .anonimbiri-notify-action-btn:hover{background:#ff0080;transform:scale(1.05)}
              `;
 
-    const style = document.createElement('style');
-    style.textContent = menuCSS;
-    document.head.appendChild(style);
+        const style = document.createElement('style');
+        style.textContent = menuCSS;
+        document.head.appendChild(style);
 
-    const hotkeyModalHTML = `
+        const hotkeyModalHTML = `
              <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
                  <div class="anonimbiri-hotkey-content">
                      <h2>Assign Hotkey</h2>
@@ -793,37 +793,37 @@ class AimbaeShiro {
                      <p>(Press ESC to cancel)</p>
                  </div>
              </div>`;
-    const modalContainer = document.createElement('div');
-    modalContainer.innerHTML = hotkeyModalHTML;
-    document.body.appendChild(modalContainer);
-    this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = hotkeyModalHTML;
+        document.body.appendChild(modalContainer);
+        this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-    this.GUI.windowIndex = window.windows.length + 1;
-    this.GUI.windowObj = {
-        closed: false,
-        header: "🌸 AimbaeShiro 🌸",
-        html: "",
-        extraCls: "anonimbiri-menu-container",
-        gen: () => this.getGuiHtml(),
-        hideScroll: true,
-        height: 'calc(100% - 300px)',
-        width: 500,
-    };
+        this.GUI.windowIndex = window.windows.length + 1;
+        this.GUI.windowObj = {
+            closed: false,
+            header: "🌸 AimbaeShiro 🌸",
+            html: "",
+            extraCls: "anonimbiri-menu-container",
+            gen: () => this.getGuiHtml(),
+            hideScroll: true,
+            height: 'calc(100% - 300px)',
+            width: 500,
+        };
 
-    Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
+        Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
 
-    this.waitFor(() => window.menuItemContainer).then(menu => {
-        if (menu && !document.getElementById('shiro-menu-button')) {
-            const btn = document.createElement("div");
-            btn.id = 'shiro-menu-button';
-            btn.className = "menuItem";
-            btn.innerHTML = ``;
-            btn.addEventListener("click", () => this.showGUI());
-            btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
-            menu.prepend(btn);
-        }
-    });
-}
+        this.waitFor(() => window.menuItemContainer).then(menu => {
+            if (menu && !document.getElementById('shiro-menu-button')) {
+                const btn = document.createElement("div");
+                btn.id = 'shiro-menu-button';
+                btn.className = "menuItem";
+                btn.innerHTML = ``;
+                btn.addEventListener("click", () => this.showGUI());
+                btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
+                menu.prepend(btn);
+            }
+        });
+    }
 
     getGuiHtml() {
         const neonIcons = {
