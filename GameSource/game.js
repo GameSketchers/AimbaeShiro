@@ -36696,7 +36696,6 @@ window.JfCzGzvGIQB8rrJX={isProxy: true};
     connected: false,
     socketId: -1,
     sendQueue: [],
-    events: null,
     trackPacketStats: false,
     tickPacketCount: 0,
     ingressPacketCount: 0,
