@@ -4,7 +4,7 @@
 // @name:ja          AimbaeShiro – Krunker.IO チート
 // @name:az          AimbaeShiro – Krunker.IO Hilesi
 // @namespace        https://github.com/GameSketchers/AimbaeShiro
-// @version          1.5.6
+// @version          1.5.7
 // @description      Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr   Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja   Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -632,7 +632,7 @@
                 target = potentialTargets[0] || null;
             }
 
-            if (target && this.game.gameState != 4 && this.game.gameState != 5) {
+            if (target && this.me.reloadTimer === 0 && this.game.gameState != 4 && this.game.gameState != 5) {
                 const isMelee = this.me.weapon.melee;
                 const closeRange = 17.6;
                 const throwRange = 65.2;
@@ -705,20 +705,20 @@
                             .map(p => p.objInstances)
                             .filter(Boolean);
                         let inCast = this.rayC.intersectObjects(this.playerMaps, true).length;
-                        /*let canSee = target.objInstances && this.containsPoint(target.objInstances.position);*/
+                        let canSee = target.objInstances && this.containsPoint(target.objInstances.position);
 
                         if (isMelee) {
-                            if (distance <= closeRange && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0 && inCast /*&& canSee*/) {
+                            if (distance <= closeRange && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0 && (!this.settings.legitAimbot || (inCast && canSee))) {
                                 inputPacket[gameInputIndices.shoot] = 1;
                             } else if (distance <= throwRange && this.me.weapon.canThrow) {
                                 inputPacket[gameInputIndices.scope] = 1;
-                                if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot && inCast /*&& canSee*/){
+                                if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot (!this.settings.legitAimbot || (inCast && canSee))){
                                     inputPacket[gameInputIndices.shoot] = 1;
                                 }
                             }
                         } else {
                             if (!this.me.weapon.noAim) inputPacket[gameInputIndices.scope] = 1;
-                            if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot && inCast /*&& canSee*/) {
+                            if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot && (!this.settings.legitAimbot || (inCast && canSee))) {
                                 inputPacket[gameInputIndices.shoot] = 1;
                             }
                         }
