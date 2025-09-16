@@ -632,7 +632,7 @@
                 target = potentialTargets[0] || null;
             }
 
-            if (target && this.me.reloadTimer === 0 && this.game.gameState != 4 && this.game.gameState != 5) {
+            if (target && this.me.reloadTimer === 0 && this.game.gameState !== 4 && this.game.gameState !== 5) {
                 const isMelee = this.me.weapon.melee;
                 const closeRange = 17.6;
                 const throwRange = 65.2;
@@ -712,7 +712,7 @@
                                 inputPacket[gameInputIndices.shoot] = 1;
                             } else if (distance <= throwRange && this.me.weapon.canThrow) {
                                 inputPacket[gameInputIndices.scope] = 1;
-                                if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot (!this.settings.legitAimbot || (inCast && canSee))){
+                                if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot && (!this.settings.legitAimbot || (inCast && canSee))){
                                     inputPacket[gameInputIndices.shoot] = 1;
                                 }
                             }
@@ -724,10 +724,10 @@
                         }
                     }
                 }
-            } else if (!target) {
+            } else if (!target && this.game.gameState !== 4 && this.game.gameState !== 5) {
                 this.legitTarget = null;
                 if (!this.settings.superSilentEnabled && !this.settings.antiAimEnabled) this.resetLookAt();
-                if (this.settings.antiAimEnabled && !this.me.didShoot){
+                if (this.settings.antiAimEnabled && !this.me.didShoot && this.me.aimVal !== 0){
                     inputPacket[gameInputIndices.xdir] = -Math.PI * 500;
                 }
             } else if (this.me.weapon.nAuto && this.me.didShoot) {
