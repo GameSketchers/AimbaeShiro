@@ -4,7 +4,7 @@
 // @name:ja          AimbaeShiro – Krunker.IO チート
 // @name:az          AimbaeShiro – Krunker.IO Hilesi
 // @namespace        https://github.com/GameSketchers/AimbaeShiro
-// @version          1.5.5
+// @version          1.5.6
 // @description      Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr   Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja   Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -74,6 +74,7 @@
                 aimbotWallBangs: false,
                 aimbotTeamCheck: true,
                 aimbotBotCheck: true,
+                superSilentEnabled: false,
                 autoFireEnabled: false,
                 fovSize: 90,
                 aimOffset: 0,
@@ -88,11 +89,10 @@
                 wireframeEnabled: false,
                 unlockSkins: true,
                 bhopEnabled: false,
+                antiAimEnabled: false,
                 espColor: "#ff0080",
                 boxColor: "#ff0080",
                 botColor: "#00ff80",
-                menuTopPx: null,
-                menuLeftPx: null,
                 autoNuke: false,
                 antikick: true,
                 autoReload: true,
@@ -103,22 +103,24 @@
                 aimTremor: 0.2,
             };
             this.defaultHotkeys = {
-                toggleMenu: 'F2',
-                aimbotEnabled: 'F3',
-                espLines: 'F4',
-                espSquare: 'F6',
-                wireframeEnabled: 'F7',
-                bhopEnabled: 'F8',
-                autoFireEnabled: 'F9',
-                aimbotWallCheck: 'F10',
-                aimbotWallBangs: 'Insert',
-                aimbotTeamCheck: 'F11',
-                espTeamCheck: 'F12',
-                espNameTags: 'Numpad1',
-                espWeaponIcons: 'Numpad2',
-                unlockSkins: 'Numpad3',
-                aimbotBotCheck: 'Numpad4',
-                espBotCheck: 'Numpad5',
+                toggleMenu: 'F1',
+                aimbotEnabled: 'F2',
+                espSquare: 'F3',
+                bhopEnabled: 'F4',
+                autoFireEnabled: 'F5',
+                superSilentEnabled: 'F6',
+                antiAimEnabled: 'F7',
+                wireframeEnabled: 'F8',
+                unlockSkins: 'F9',
+                aimbotTeamCheck: 'Numpad1',
+                espTeamCheck: 'Numpad2',
+                aimbotBotCheck: 'Numpad3',
+                espBotCheck: 'Numpad4',
+                aimbotWallCheck: 'Numpad5',
+                aimbotWallBangs: 'Numpad6',
+                espLines: 'Numpad7',
+                espNameTags: 'Numpad8',
+                espWeaponIcons: 'Numpad9',
             };
             this.settings = {};
             this.hotkeys = {};
@@ -402,7 +404,7 @@
                     set(skinsArray) {
                         this[originalSkinsSymbol] = skinsArray;
                         if (!this[localSkinsSymbol]) {
-                            this[localSkinsSymbol] = Array.apply(null, Array(7208)).map((_, i) => { return { ind: i, cnt: 1, }});
+                            this[localSkinsSymbol] = Array.apply(null, Array(25000)).map((_, i) => { return { ind: i, cnt: 1, }});
                         }
                         return skinsArray;
                     },
@@ -601,13 +603,13 @@
             let target = null;
             if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
                 let potentialTargets = this.game.players.list
-                    .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || this.getCanSee(p)))
-                    .map(p => ({ ...p, isBot: false }));
+                .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || this.getCanSee(p)))
+                .map(p => ({ ...p, isBot: false }));
 
                 if (this.settings.aimbotBotCheck && this.game.AI?.ais) {
                     const botTargets = this.game.AI.ais
-                        .filter(bot => bot.mesh && bot.mesh.visible && bot.health > 0 && (!this.settings.aimbotWallCheck || this.getCanSee(bot)))
-                        .map(bot => ({ ...bot, isBot: true }));
+                    .filter(bot => bot.mesh && bot.mesh.visible && bot.health > 0 && (!this.settings.aimbotWallCheck || this.getCanSee(bot)))
+                    .map(bot => ({ ...bot, isBot: true }));
                     potentialTargets = potentialTargets.concat(botTargets);
                 }
 
@@ -630,7 +632,7 @@
                 target = potentialTargets[0] || null;
             }
 
-            if (target && this.me.weapon.secondary !== undefined && this.me.weapon.secondary !== null && !this.me.weapon.melee) {
+            if (target && this.game.gameState != 4 && this.game.gameState != 5) {
                 const isMelee = this.me.weapon.melee;
                 const closeRange = 17.6;
                 const throwRange = 65.2;
@@ -640,21 +642,18 @@
                     // Do nothing if melee and out of range
                 } else {
                     if (this.settings.legitAimbot) {
-                        // LEGIT AIMBOT LOGIC
                         let adsReduction = 1.0;
-                        if (this.me.aimVal < 1) { // Player is scoping
-                             adsReduction = 1.0 - (this.settings.adsTremorReduction / 100.0);
+                        if (this.me.aimVal < 1) {
+                            adsReduction = 1.0 - (this.settings.adsTremorReduction / 100.0);
                         }
 
                         if (this.legitTarget !== target) {
                             this.legitTarget = target;
                             this.lastTargetChangeTime = Date.now();
-                            // Reset offset for new target
                             this.aimOffset.x = (Math.random() - 0.5) * (this.settings.aimRandomness * adsReduction);
                             this.aimOffset.y = (Math.random() - 0.5) * (this.settings.aimRandomness * adsReduction);
                         }
 
-                        // Slowly drift the random offset over time
                         const wanderAmount = this.settings.aimRandomness * adsReduction;
                         this.aimOffset.x += (Math.random() - 0.5) * wanderAmount * 0.1;
                         this.aimOffset.y += (Math.random() - 0.5) * wanderAmount * 0.1;
@@ -669,11 +668,9 @@
                         const currentY = this.controls.object.rotation.y;
                         const currentX = this.controls[this.vars.pchObjc].rotation.x;
 
-                        // Add wandering randomness
                         const finalX = xDire - (0.3 * this.me.recoilAnimY) + this.aimOffset.y * 0.01;
                         const finalY = yDire + this.aimOffset.x * 0.01;
 
-                        // Proportional movement for flicking
                         const flickFactor = this.settings.flickSpeed * 0.01;
                         const shortestAngleY = Math.atan2(Math.sin(finalY - currentY), Math.cos(finalY - currentY));
                         let newY = currentY + shortestAngleY * flickFactor;
@@ -681,7 +678,6 @@
                         const shortestAngleX = finalX - currentX;
                         let newX = currentX + shortestAngleX * flickFactor;
 
-                        // Add tremor
                         if (this.settings.aimTremor > 0) {
                             const tremorAmount = this.settings.aimTremor * adsReduction;
                             const tremorX = (Math.random() - 0.5) * tremorAmount * 0.01;
@@ -690,29 +686,39 @@
                             newY += tremorY;
                         }
 
-                        this.lookDir(newX, newY);
+                        if (!this.settings.superSilentEnabled) this.lookDir(newX, newY);
+                        inputPacket[gameInputIndices.xdir] = newX * 1000;
+                        inputPacket[gameInputIndices.ydir] = newY * 1000;
 
                     } else {
-                        // ORIGINAL RAGE AIMBOT LOGIC
                         const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
                         const xDire = target.isBot ? ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.dat.mSize / 2, target.z) || 0) - (0.3 * this.me.recoilAnimY)) : ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
-                        this.lookDir(xDire, yDire);
+                        if (!this.settings.superSilentEnabled) this.lookDir(xDire, yDire);
+                        inputPacket[gameInputIndices.xdir] = xDire * 1000;
+                        inputPacket[gameInputIndices.ydir] = yDire * 1000;
                     }
 
-                    // AUTO FIRE LOGIC (applies to both modes)
                     if (this.settings.autoFireEnabled) {
+                        this.playerMaps.length = 0;
+                        this.rayC.setFromCamera(this.vec2, this.renderer.fpsCamera);
+                        this.playerMaps = this.game.players.list
+                            .map(p => p.objInstances)
+                            .filter(Boolean);
+                        let inCast = this.rayC.intersectObjects(this.playerMaps, true).length;
+                        /*let canSee = target.objInstances && this.containsPoint(target.objInstances.position);*/
+
                         if (isMelee) {
-                            if (distance <= closeRange && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0) {
+                            if (distance <= closeRange && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0 && inCast /*&& canSee*/) {
                                 inputPacket[gameInputIndices.shoot] = 1;
                             } else if (distance <= throwRange && this.me.weapon.canThrow) {
                                 inputPacket[gameInputIndices.scope] = 1;
-                                if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot){
+                                if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot && inCast /*&& canSee*/){
                                     inputPacket[gameInputIndices.shoot] = 1;
                                 }
                             }
                         } else {
                             if (!this.me.weapon.noAim) inputPacket[gameInputIndices.scope] = 1;
-                            if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot) {
+                            if ((this.me.weapon.noAim || this.me.aimVal === 0) && this.me.reloadTimer === 0 && !this.me.didShoot && inCast /*&& canSee*/) {
                                 inputPacket[gameInputIndices.shoot] = 1;
                             }
                         }
@@ -720,7 +726,10 @@
                 }
             } else if (!target) {
                 this.legitTarget = null;
-                this.resetLookAt();
+                if (!this.settings.superSilentEnabled && !this.settings.antiAimEnabled) this.resetLookAt();
+                if (this.settings.antiAimEnabled && !this.me.didShoot){
+                    inputPacket[gameInputIndices.xdir] = -Math.PI * 500;
+                }
             } else if (this.me.weapon.nAuto && this.me.didShoot) {
                 inputPacket[gameInputIndices.shoot] = 0;
                 inputPacket[gameInputIndices.scope] = 0;
@@ -873,28 +882,30 @@
 
         getGuiHtml() {
             const neonIcons = {
-                aimbot: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/>',
-                rightMouse: '<rect x="7" y="3" width="10" height="18" rx="5"/><path d="M12 6v4"/>',
-                wallCheck: '<rect x="4" y="6" width="16" height="12" rx="2"/><path d="M4 12h16M8 6v12M16 6v12"/>',
-                wallbangs: '<rect x="2" y="2" width="2" height="20" rx="1"/><path d="M4 2l10 3v16L4 18V2z"/><circle cx="12" cy="12" r="1"/><path d="M16 12h6m-3-2l2 2-2 2"/>',
-                teamCheck: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M9 12l2 2 4-4"/>',
-                autoFire: '<path d="M13 3L6 12h4l-2 9 8-12h-4l1-6z"/>',
-                espLines: '<circle cx="12" cy="12" r="9"/><path d="M12 12l6-6M12 12h9M12 12v9"/>',
-                espSquare: '<path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/>',
-                nameTags: '<rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="8" cy="12" r="2"/><path d="M12 10h6M12 14h6"/>',
-                weaponIcons: '<path d="M7 7l2-2 2 2v10H7z"/><path d="M13 7l2-2 2 2v10h-4z"/>',
-                espInfoBackground: '<rect x="3" y="6" width="18" height="12" rx="2"/>',
-                colorPicker: '<path d="M12 4a8 8 0 1 0 0 16 3 3 0 0 0 0-6h-2a3 3 0 1 1 0-6h2"/><circle cx="8.5" cy="9.5" r="1"/><circle cx="11.5" cy="8" r="1"/><circle cx="15.5" cy="9.5" r="1"/><circle cx="9.5" cy="13.5" r="1"/>',
-                wireframe: '<path d="M12 3l8 4v10l-8 4-8-4V7l8-4z"/><path d="M12 3v18M20 7l-8 4-8-4"/>',
-                unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0"/><circle cx="12" cy="16" r="1"/><path d="M12 17v2"/>',
-                bunnyHop: '<path d="M6 16l6-6 6 6"/><path d="M6 10h12"/>',
-                autoNuke: '<circle cx="12" cy="12" r="2"/><path d="M12 4v4l-3 2"/><path d="M20 12h-4l-2-3"/><path d="M12 20v-4l3-2"/>',
-                antiKick: '<path d="M12 3l7 3v6c0 5-3.5 8.5-7 9-3.5-.5-7-4-7-9V6l7-3z"/><path d="M8 8l8 8"/>',
-                autoReload: '<path d="M20 12a8 8 0 1 1-2-5.3"/><path d="M20 5v6h-6"/>',
-                hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2"/><path d="M6 10h12M6 13h12"/>',
-                fov: '<circle cx="12" cy="12" r="9"/><path d="M12 12l8-3M12 12l8 3"/><circle cx="12" cy="12" r="1.2"/>',
-                botCheck: '<circle cx="12" cy="4" r="1.4"/><path d="M12 5.6v1.8"/><rect x="5" y="8" width="14" height="10" rx="3"/><circle cx="9" cy="13" r="1.2"/><circle cx="15" cy="13" r="1.2"/><path d="M9 16h6"/><path d="M5.5 19l1.8 1.8L10.5 17.6" />',
-                botColor: '<path d="M12 5a7 7 0 1 0 0 14c1.8 0 3-1.2 3-2.6 0-1-1-1.8-2.2-1.8h-.8a2.6 2.6 0 1 1 0-5.2h1"/><circle cx="8.5" cy="11" r="1"/><circle cx="11.5" cy="9.5" r="1"/><circle cx="15.2" cy="11.2" r="1"/><circle cx="9.5" cy="14" r="1"/><path d="M18.5 6.5l.8 2 .8-2 2-.8-2-.8-.8-2-.8 2-2 .8 2 .8z"/>'
+                aimbot: '<circle cx="12" cy="12" r="7" stroke-width="2" fill="none"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke-width="2"/>',
+                rightMouse: '<rect x="7" y="3" width="10" height="18" rx="3" stroke-width="2" fill="none"/><path d="M12 3v6" stroke-width="2"/><line x1="9.5" y1="11" x2="9.5" y2="11" stroke-width="2" stroke-linecap="round"/><line x1="14.5" y1="11" x2="14.5" y2="11" stroke-width="2" stroke-linecap="round"/>',
+                wallCheck: '<rect x="4" y="6" width="16" height="12" rx="1" stroke-width="2" fill="none"/><path d="M4 12h16M8 6v12M16 6v12" stroke-width="1.5" opacity="0.6"/><circle cx="12" cy="12" r="2" fill="currentColor"><animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/></circle>',
+                wallbangs: '<rect x="3" y="8" width="4" height="8" stroke-width="2" fill="none"/><path d="M7 12h5" stroke-width="2" stroke-dasharray="2 1"/><circle cx="14" cy="12" r="1" fill="currentColor"/><path d="M15 12l4 0" stroke-width="2"><animate attributeName="stroke-dashoffset" from="0" to="-10" dur="1s" repeatCount="indefinite"/></path>',
+                teamCheck: '<path d="M12 2l8 3.5v7c0 5.5-3.5 9.3-8 10.5-4.5-1.2-8-5-8-10.5v-7z" stroke-width="2" fill="none"/><path d="M8 12l3 3 5-6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+                autoFire: '<path d="M13 2l-2 7h4l-3 11 7-11h-4l2-7z" stroke-width="2" fill="none"><animate attributeName="opacity" values="1;0.4;1" dur="0.8s" repeatCount="indefinite"/></path>',
+                superSilentEnabled: '<circle cx="12" cy="12" r="3" stroke-width="2" fill="none"/><path d="M3 12h6M15 12h6" stroke-width="2" stroke-dasharray="3 2"/><path d="M12 3v6M12 15v6" stroke-width="2" stroke-dasharray="3 2" opacity="0.5"/>',
+                espLines: '<circle cx="12" cy="12" r="8" stroke-width="2" fill="none"/><path d="M12 12l5-5M12 12l5 5M12 12h7" stroke-width="1.5"><animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/></path>',
+                espSquare: '<path d="M3 8V3h5M21 8V3h-5M3 16v5h5M21 16v5h-5" stroke-width="2" stroke-linecap="round"/>',
+                nameTags: '<rect x="3" y="7" width="18" height="10" rx="2" stroke-width="2" fill="none"/><circle cx="7" cy="12" r="1.5" fill="currentColor"/><line x1="11" y1="10" x2="18" y2="10" stroke-width="1.5"/><line x1="11" y1="14" x2="16" y2="14" stroke-width="1.5"/>',
+                weaponIcons: '<path d="M7 4l1.5 3v11a1 1 0 001 1h3a1 1 0 001-1V7l1.5-3z" stroke-width="2" fill="none"/><path d="M16 8v8l2 2" stroke-width="2" stroke-linecap="round"/>',
+                espInfoBackground: '<rect x="3" y="6" width="18" height="12" rx="2" stroke-width="2" fill="none"/><rect x="5" y="8" width="14" height="8" rx="1" opacity="0.3" fill="currentColor"/>',
+                colorPicker: '<circle cx="12" cy="12" r="9" stroke-width="2" fill="none"/><circle cx="12" cy="8" r="2" fill="#ff0080"/><circle cx="15.5" cy="11" r="2" fill="#00ff80"/><circle cx="14" cy="15" r="2" fill="#0080ff"/><circle cx="9" cy="15" r="2" fill="#ffff00"/><circle cx="8.5" cy="11" r="2" fill="#ff00ff"/>',
+                wireframe: '<path d="M12 2l9 5v10l-9 5-9-5V7z" stroke-width="2" fill="none"/><path d="M12 2v20M21 7l-18 10M3 7l18 10" stroke-width="1" opacity="0.5"/>',
+                unlockSkins: '<rect x="5" y="11" width="14" height="10" rx="2" stroke-width="2" fill="none"/><path d="M8 11V7a4 4 0 018 0v4" stroke-width="2" fill="none"/><circle cx="12" cy="16" r="1" fill="currentColor"/><path d="M12 16v2" stroke-width="2"/>',
+                bunnyHop: '<path d="M4 20h16" stroke-width="2"/><path d="M7 20c0-3 2-5 2-5s1 2 3 2 3-2 3-2 2 2 2 5" stroke-width="2" fill="none"><animateTransform attributeName="transform" type="translate" values="0,0; 0,-2; 0,0" dur="0.6s" repeatCount="indefinite"/></path>',
+                antiAimEnabled: '<circle cx="12" cy="12" r="8" stroke-width="2" fill="none"/><path d="M12 8v4l3 3" stroke-width="2" stroke-linecap="round"/><path d="M16 8l2-2m0 0l2 2m-2-2v4" stroke-width="1.5"><animateTransform attributeName="transform" type="rotate" from="0 18 6" to="360 18 6" dur="3s" repeatCount="indefinite"/></path>',
+                autoNuke: '<circle cx="12" cy="12" r="3" fill="currentColor"/><circle cx="12" cy="12" r="6" stroke-width="2" fill="none" stroke-dasharray="2 1"/><circle cx="12" cy="12" r="9" stroke-width="2" fill="none" opacity="0.5"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2" stroke-width="1.5"><animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/></path>',
+                antiKick: '<path d="M12 2l8 3.5v7c0 5.5-3.5 9.3-8 10.5-4.5-1.2-8-5-8-10.5v-7z" stroke-width="2" fill="none"/><path d="M8 8l8 8M16 8l-8 8" stroke-width="2" stroke-linecap="round"/>',
+                autoReload: '<path d="M21 12a9 9 0 01-9 9 9 9 0 01-9-9 9 9 0 019-9c2.5 0 4.7 1 6.3 2.7" stroke-width="2" fill="none"/><path d="M21 4v5h-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+                hotkeys: '<rect x="3" y="7" width="18" height="10" rx="2" stroke-width="2" fill="none"/><rect x="6" y="10" width="3" height="2" fill="currentColor"/><rect x="10.5" y="10" width="3" height="2" fill="currentColor"/><rect x="15" y="10" width="3" height="2" fill="currentColor"/><rect x="8" y="13" width="8" height="2" fill="currentColor"/>',
+                fov: '<circle cx="12" cy="12" r="9" stroke-width="2" fill="none"/><path d="M12 12l6-4M12 12l6 4" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="2" fill="currentColor"><animate attributeName="r" values="2;3;2" dur="2s" repeatCount="indefinite"/></circle>',
+                botCheck: '<circle cx="12" cy="5" r="2" stroke-width="2" fill="none"/><rect x="8" y="7" width="8" height="5" rx="1" stroke-width="2" fill="none"/><rect x="7" y="12" width="10" height="7" rx="2" stroke-width="2" fill="none"/><circle cx="10" cy="15" r="1" fill="currentColor"/><circle cx="14" cy="15" r="1" fill="currentColor"/><path d="M10 17h4" stroke-width="1.5" stroke-linecap="round"/>',
+                botColor: '<circle cx="12" cy="12" r="8" stroke-width="2" fill="none"/><circle cx="9" cy="10" r="1.5" fill="#ff0080"/><circle cx="15" cy="10" r="1.5" fill="#00ff80"/><circle cx="12" cy="14" r="1.5" fill="#0080ff"/><path d="M18 5l1-1m0 0l1 1m-1-1v2" stroke-width="1.5" stroke-linecap="round"><animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/></path>'
             };
 
             const tooltips = {
@@ -905,6 +916,7 @@
                 aimbotTeamCheck: 'Aimbot will not target teammates.',
                 aimbotBotCheck: 'Aimbot will target AI/bots.',
                 autoFireEnabled: 'Automatically fires when an aimbot target is acquired.',
+                superSilentEnabled: 'Aimbot aims without moving your camera view.',
                 fovSize: 'Radius of the circle (in pixels) where aimbot can target enemies. Set to 0 for full screen.',
                 drawFovCircle: 'Displays the aimbot FOV circle on screen.',
                 espTeamCheck: 'Do not show ESP for teammates.',
@@ -920,6 +932,8 @@
                 wireframeEnabled: 'Renders the map and players in wireframe mode.',
                 unlockSkins: 'Client-side skin unlocker.',
                 bhopEnabled: 'Hold space to automatically jump/slide.',
+                antiAimEnabled: 'Makes you harder to hit by looking down when not shooting.',
+                tooltips: 'Makes you harder to hit by looking down when not shooting.',
                 autoNuke: 'Automatically uses nuke when available.',
                 antikick: 'Prevents being kicked for inactivity.',
                 autoReload: 'Automatically reloads your weapon when out of ammo.',
@@ -947,6 +961,7 @@
                           ${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check', neonIcons.teamCheck, tooltips.aimbotTeamCheck)}
                           ${this.createMenuItemHTML('toggle','aimbotBotCheck','Bot Aim', neonIcons.botCheck, tooltips.aimbotBotCheck)}
                           ${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire', neonIcons.autoFire, tooltips.autoFireEnabled)}
+                          ${this.createMenuItemHTML('toggle','superSilentEnabled','Super Silent Aim', neonIcons.superSilentEnabled, tooltips.superSilentEnabled)}
                           <hr style="border-color: #ff00803d;">
                           ${this.createMenuItemHTML('toggle','legitAimbot','Legit AI Aim', neonIcons.teamCheck, 'Simulates human-like aiming.')}
                           ${this.createMenuItemHTML('slider','flickSpeed','Flick Speed', neonIcons.autoFire, 'Controls the speed of the initial flick. Higher is faster.', 0, 100, 1)}
@@ -975,6 +990,7 @@
                           ${this.createMenuItemHTML('toggle','wireframeEnabled','Wireframe', neonIcons.wireframe, tooltips.wireframeEnabled)}
                           ${this.createMenuItemHTML('toggle','unlockSkins','Unlock All Skins', neonIcons.unlockSkins, tooltips.unlockSkins)}
                           ${this.createMenuItemHTML('toggle','bhopEnabled','Bunny Hop', neonIcons.bunnyHop, tooltips.bhopEnabled)}
+                          ${this.createMenuItemHTML('toggle','antiAimEnabled','Anti-Aim', neonIcons.antiAimEnabled, tooltips.antiAimEnabled)}
                           ${this.createMenuItemHTML('toggle','autoNuke','Auto Nuke', neonIcons.autoNuke, tooltips.autoNuke)}
                           ${this.createMenuItemHTML('toggle','antikick','Anti Kick', neonIcons.antiKick, tooltips.antikick)}
                           ${this.createMenuItemHTML('toggle','autoReload','Auto Reload', neonIcons.autoReload, tooltips.autoReload)}
@@ -992,11 +1008,13 @@
                           ${this.createMenuItemHTML('hotkey','espNameTags','Toggle Full Info', neonIcons.nameTags, tooltips.espNameTags)}
                           ${this.createMenuItemHTML('hotkey','espWeaponIcons','Toggle Weapon Icon', neonIcons.weaponIcons, tooltips.espWeaponIcons)}
                           ${this.createMenuItemHTML('hotkey','autoFireEnabled','Toggle Auto Fire', neonIcons.autoFire, tooltips.autoFireEnabled)}
+                          ${this.createMenuItemHTML('hotkey','superSilentEnabled','Toggle Super Silent', neonIcons.superSilentEnabled, 'Set a key to toggle Super Silent Aim.')}
                           ${this.createMenuItemHTML('hotkey','espLines','Toggle Energy Trail', neonIcons.espLines, tooltips.espLines)}
                           ${this.createMenuItemHTML('hotkey','espSquare','Toggle Glowing Box', neonIcons.espSquare, tooltips.espSquare)}
                           ${this.createMenuItemHTML('hotkey','wireframeEnabled','Toggle Wireframe', neonIcons.wireframe, tooltips.wireframeEnabled)}
                           ${this.createMenuItemHTML('hotkey','unlockSkins','Toggle Unlock Skins', neonIcons.unlockSkins, tooltips.unlockSkins)}
                           ${this.createMenuItemHTML('hotkey','bhopEnabled','Toggle Bunny Hop', neonIcons.bunnyHop, tooltips.bhopEnabled)}
+                          ${this.createMenuItemHTML('hotkey','antiAimEnabled','Toggle Anti-Aim', neonIcons.antiAimEnabled, 'Set a key to toggle Anti-Aim.')}
                       </div>
                   </div>`;
         }
@@ -1013,10 +1031,10 @@
                           <input type="color" class="anonimbiri-color-picker-input" data-setting="${setting}" value="${this.settings[setting]}">
                           <div class="anonimbiri-color-preview" data-setting="${setting}" style="background-color: ${this.settings[setting]}"></div>
                       </div>`;
-                break;
+                    break;
                 case 'hotkey':
                     controlHTML = `<div class="anonimbiri-hotkey" data-hotkey="${setting}">${this.hotkeys[setting]?.replace('Key', '').replace('Digit', '') || 'N/A'}</div>`;
-                break;
+                    break;
                 case 'slider':
                     const val = (this.settings && typeof this.settings[setting] !== 'undefined') ? this.settings[setting] : 0;
                     const displayVal = val <= 0 ? 'Off' : val;
@@ -1024,7 +1042,7 @@
                           <input type="range" class="anonimbiri-slider" data-setting="${setting}" min="${min}" max="${max}" step="${step}" value="${val}">
                           <input type="text" class="anonimbiri-slider-value" data-setting="${setting}" value="${displayVal}" onfocus="this.type='number'" onblur="this.type='text'; this.value = this.value <= 0 ? 'Off' : this.value">
                       </div>`;
-                break;
+                    break;
             }
             return `<div class="anonimbiri-menu-item ${this.settings[setting] ? 'active' : ''}" data-setting="${setting}" title="${tooltip}">
                   <div class="anonimbiri-menu-item-content">${iconSVG}<label>${label}</label></div>
@@ -1333,11 +1351,11 @@
                 let weaponIcon = null;
                 if (hasWeapon && this.settings.espWeaponIcons && player.weapon.icon) {
                     if (!this.weaponIconCache) this.weaponIconCache = {};
-                    if (!this.weaponIconCache[player.weapon.icon]) {
-                        this.weaponIconCache[player.weapon.icon] = new Image();
-                        this.weaponIconCache[player.weapon.icon].src = `https://assets.krunker.io/textures/weapons/${player.weapon.icon}.png`;
+                    if (!this.weaponIconCache[player.weapon.melee ? 'melee_' : 'weapons_' + player.weapon.icon]) {
+                        this.weaponIconCache[player.weapon.melee ? 'melee_' : 'weapons_' + player.weapon.icon] = new Image();
+                        this.weaponIconCache[player.weapon.melee ? 'melee_' : 'weapons_' + player.weapon.icon].src = `https://assets.krunker.io/textures/${player.weapon.melee ? 'melee' : 'weapons'}/${player.weapon.icon}.png`;
                     }
-                    weaponIcon = this.weaponIconCache[player.weapon.icon];
+                    weaponIcon = this.weaponIconCache[player.weapon.melee ? 'melee_' : 'weapons_' + player.weapon.icon];
                     if (weaponIcon.complete && weaponIcon.naturalWidth > 0) {
                         iconWidth = weaponIcon.width * (iconHeight / weaponIcon.height);
                     }
