@@ -1,66 +1,150 @@
+<h1 align="center">🌸 Krunker.io Game.js Deobfuscation Guide</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Target-Krunker.io-ff66cc?style=for-the-badge&logo=krunker&logoColor=white" alt="Target Krunker">
+  <img src="https://img.shields.io/badge/Language-JavaScript-ff66cc?style=for-the-badge&logo=javascript&logoColor=white" alt="JavaScript">
+  <img src="https://img.shields.io/badge/Tool-WebCrack-ff66cc?style=for-the-badge&logo=netlify&logoColor=white" alt="WebCrack">
+  <img src="https://img.shields.io/badge/Difficulty-Advanced-ff66cc?style=for-the-badge&logo=hackthebox&logoColor=white" alt="Difficulty">
+</p>
+
 <div align="center">
   <a href="https://youtu.be/23tSqySN_T4">
-    <img src="https://img.youtube.com/vi/23tSqySN_T4/maxresdefault.jpg" alt="Watch the video guide">
+    <img src="https://img.youtube.com/vi/23tSqySN_T4/maxresdefault.jpg" alt="Watch the video guide" style="border-radius: 10px; box-shadow: 0px 0px 20px rgba(255, 102, 204, 0.4);">
   </a>
   <br>
-  <sub><b>Click the image above to watch the video guide</b></sub>
+  <sub><b>👆 Click the image above to watch the full video tutorial 👆</b></sub>
 </div>
 
+---
 
-# Krunker.io game.js Deobfuscation Guide
+## 📖 Overview
 
-This guide provides a step-by-step process for deobfuscating and analyzing the `game.js` file from the game Krunker.io.
+This guide provides a comprehensive, step-by-step walkthrough for deobfuscating and analyzing the core `game.js` file of **Krunker.io**. Understanding the structure of this file is essential for reverse engineering, script analysis, and understanding how the game client communicates with the server.
 
-## About This Project
+> [!NOTE]
+> This guide is based on the manual extraction and analysis method shown in the video. It focuses on identifying patterns rather than copy-pasting code, as Krunker obfuscation changes frequently.
 
-The purpose of this guide is to walk through the process of accessing and making sense of the core `game.js` script. By deobfuscating the code, you can gain insights into the game's mechanics and variables.
+---
 
-## Steps to Deobfuscate
+## ⚠️ Important: Understanding Dynamic Obfuscation
 
-1.  **Open Developer Tools**:
-    * On the Krunker.io website, open your browser's developer tools by pressing `Ctrl + Shift + I` or `F12`.
+Before you begin, you **MUST** understand that Krunker.io uses dynamic obfuscation.
 
-2.  **Locate the Game Socket**:
-    * Navigate to the "Network" tab within the developer tools.
-    * Filter the connections by "WS" (WebSockets) to find the game's socket connection. Click on it.
+*   **Variables change every update:** Strings like `iiiiii`, `Yhqqc3`, `JFczVg`, or `Debkt` are **randomly generated**.
+*   **Do not search for exact names:** If you search for `Yhqqc3` in your file, you probably won't find it.
+*   **Look for patterns:** You must look for the *structure* of the code (e.g., how events are called, or where `moveLock` is located) rather than the specific variable names shown in the screenshots or video.
 
-3.  **Find `game.js` Content**:
-    * In the "Messages" or "Frames" sub-tab for the WebSocket, you will see the data being sent. Look for the message that contains the `game.js` code and copy its entire content.
+---
 
-4.  **Deobfuscate the Code**:
-    * Go to an online JavaScript deobfuscator tool like `webcrack.netlify.app`.
-    * Paste the copied code into the tool to beautify and deobfuscate it.
+## 🛠️ Tools Required
 
-## Code Analysis & Edits
+1.  **Modern Web Browser** (Chrome, Edge, Brave, etc.)
+2.  **Developer Tools** (Built-in)
+3.  **WebCrack** (Online Deobfuscator) - [Visit WebCrack](https://webcrack.netlify.app/)
+4.  **Text Editor** (VS Code, Sublime Text, or Notepad++)
 
-After deobfuscating the code, you can analyze and modify it. The video demonstrates several "find and replace" actions to make the code more readable and to identify key variables.
+---
 
-**Important Note:** The obfuscated variable names (like `iiiiii` or `iii.Yhqqc3`) are dynamic and may be different each time you access the game. The key is to find the relevant code blocks and patterns, not to rely on the exact variable names shown in the video. Use the "Find" feature (`Ctrl + F` or `Cmd + F`) in your code editor to search for specific strings or patterns.
+## 🚀 Step-by-Step Guide
 
-Here are the specific replacements made in the video, with a more detailed explanation of the process:
+### 1. Intercepting the Source Code
+The `game.js` file is loaded dynamically. To catch it, we need to inspect the network traffic.
 
-* **Simplifying Event Handling**:
-    * **Action:** The code `iiiiii.this.events` was replaced with `iiiiii`.
-    * **Details:** The deobfuscated code often has long and repetitive chains for accessing properties. In this case, the developer tools were used to find all instances of `iiiiii.this.events` and replace them with `iiiiii`. This is a common practice to shorten the code and make it easier to read. The name `iiiiii` itself is a placeholder from the obfuscation process and could be different in your version of the code. The goal is to identify a recurring, lengthy property accessor and simplify it.
+1.  Open **Krunker.io** in your browser.
+2.  Open **Developer Tools**:
+    *   Press `F12` or `Ctrl + Shift + I`.
+3.  Navigate to the **Network** tab.
+4.  In the filter bar, click on **WS** (WebSockets) to filter the traffic.
+5.  Refresh the page (`F5`) if necessary to catch the initial connection.
+6.  Look for the game socket connection (often a random URL or one ending in `/ws`).
 
-* **Clarifying Variable Functions**:
-    * **Action:** The obfuscated variable `iii.Yhqqc3` was replaced.
-    * **Details:** Similarly to the above, this is another example of a variable with a meaningless, obfuscated name. By analyzing the surrounding code, you can often deduce the variable's purpose. In the video, this variable was identified and replaced to give it a more descriptive name, which aids in understanding the code's logic.
+### 2. Extracting the Payload
+1.  Click on the WebSocket connection you found.
+2.  Go to the **Messages** (or **Response**) tab inside the network panel.
+3.  Look for a large message frame that initializes the game. This contains the raw `game.js` logic.
+4.  **Right-click** the message and select **Copy Message** (or copy the text content).
 
-* **Targeting Specific Strings**:
-    * **Action:** The string `moveLock` was targeted and replaced.
-    * **Details:** `moveLock` is a more human-readable string that was likely part of the original source code. Searching for such strings can help you pinpoint specific functionalities within the obfuscated code, in this case, likely related to player movement restrictions.
+### 3. Deobfuscation Process
+The raw code is "minified" and "obfuscated," making it unreadable. We need to make it human-readable.
 
-* **Replacing Obfuscated Names**:
-    * **Action:** The obfuscated name `Debkt` was replaced.
-    * **Details:** Another example of replacing a randomly generated name to improve code clarity.
+1.  Go to [WebCrack](https://webcrack.netlify.app/).
+2.  **Paste** the copied code into the input box.
+3.  Click **Deobfuscate** / **Crack**.
+4.  Wait for the process to finish.
+5.  **Copy** the output code into your Text Editor (e.g., VS Code) for analysis.
 
-* **Analyzing Proxy Checks**:
-    * **Action:** The proxy check `window.JFczVgZIQB8rJX.isProxy` was located and replaced.
-    * **Details:** This is a crucial part of the code for understanding how the game might detect if a player is using a proxy. The `isProxy` part is a strong indicator of its purpose. The long, randomized string `JFczVgZIQB8rJX` is a classic example of obfuscation. By finding and analyzing this line, you can understand the game's anti-cheat or network security measures.
+---
 
-After making your desired changes, you can save the modified code for further analysis.
+## 🧠 Code Analysis & Refactoring
 
-## Disclaimer
+Now that you have the readable code, we need to find specific logic blocks. Remember, **ignore the random variable names** and focus on the logic shown below.
 
-This project is for educational purposes only. Users are solely responsible for any actions that may violate the terms of service of Krunker.io.
+### 🔍 1. Fixing Event Handlers
+The game often wraps event listeners in complex chains. We want to simplify references to `this.events`.
+
+*   **Search for:** Code logic that handles packet events.
+*   **Pattern:** Often looks like `variable.this.events`.
+*   **Action:**
+    *   Find instances where the code references the event manager.
+    *   Replace the long obfuscated chain (e.g., `iiiiii.this.events`) with a simpler variable name (e.g., `iiiiii`) or mapped name.
+    *   *Note in Video:* The user replaces `iiiiii.this.events` assignments to clean up the logic flow.
+
+### 🔍 2. Identifying Configuration Variables
+There are specific boolean flags or configuration objects used for anti-cheat or game settings.
+
+*   **Target:** `iii.Yhqqc3` (Example Name)
+*   **How to find it:** Look for variables that toggle visibility or rendering settings near the main update loop.
+*   **Refactoring:**
+    *   Once identified, use **Ctrl + H** (Replace All).
+    *   Replace the random string `iii.Yhqqc3` with something descriptive if you can confirm its function, or simply trace where it is used.
+
+### 🔍 3. Locating Movement Logic (`moveLock`)
+One of the few things that often remains in plain text is string literals.
+
+*   **Search Keyword:** `moveLock`
+*   **Context:** This string is usually associated with movement restrictions or the "slide" mechanic.
+*   **Action:**
+    *   Press `Ctrl + F` and search for `"moveLock"`.
+    *   This will lead you to the `this.update` or player movement function.
+    *   By finding this, you can identify the variables surrounding it, which control player X/Y/Z coordinates.
+
+### 🔍 4. Cleaning Random Function Names (`Debkt`)
+You will see function calls like `Debkt()`.
+
+*   **Action:** These are often utility functions (math helpers, decoding helpers).
+*   **Strategy:** If you see a function being called repeatedly with random names, you can rename them globally to `func_1`, `func_2`, etc., to make the code less cluttered, though standard deobfuscators often handle this.
+
+### 🔍 5. Anti-Cheat & Proxy Detection
+The game checks if it's running in a trusted environment.
+
+*   **Pattern:** `window.[RANDOM_STRING].isProxy`
+*   **Example from Video:** `window.JFczVgZIQB8rJX.isProxy`
+*   **How to find:**
+    *   Search for `.isProxy` inside the code.
+    *   If that fails, search for `window.` and look for long, suspicious random property access.
+*   **Significance:** This block is crucial. It determines if the game detects a modified client or a browser extension injecting code. Understanding this logic is key to bypassing checks.
+
+---
+
+## 📝 Summary of Key Replacements
+
+| Obfuscated Pattern (Example) | Likely Meaning | Search Strategy |
+| :--- | :--- | :--- |
+| `iiiiii.this.events` | Event Manager | Look for `.events` property access. |
+| `iii.Yhqqc3` | Config/Visibility | Look for booleans toggled in render loops. |
+| `"moveLock"` | Movement State | Search text string `"moveLock"`. |
+| `window.JFc...isProxy` | Anti-Tamper Check | Search for `isProxy` or window properties. |
+
+---
+
+## ⚖️ Disclaimer
+
+> This project and guide are for **educational purposes only**. The information provided here is intended to help developers understand web security, obfuscation techniques, and JavaScript code analysis.
+>
+> We do not encourage hacking, cheating, or violating the Terms of Service of Krunker.io. Users are solely responsible for any actions taken using this information.
+
+---
+
+<p align="center">
+  <sub>Guide generated based on visual analysis of the provided tutorial.</sub>
+</p>
