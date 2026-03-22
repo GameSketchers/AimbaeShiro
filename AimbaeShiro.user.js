@@ -4,7 +4,7 @@
 // @name:ja          AimbaeShiro – Krunker.IO チート
 // @name:az          AimbaeShiro – Krunker.IO Hilesi
 // @namespace        https://github.com/GameSketchers/AimbaeShiro
-// @version          1.6.2
+// @version          1.6.3
 // @description      Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr   Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja   Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -174,7 +174,7 @@
             this.espCharImg = new Image();
             this.espCharImg.crossOrigin = 'anonymous';
             this.espCharImg.onload = () => { this.espCharLoaded = true; if (this.espPreviewCtx) this.renderESPPreview(); };
-            this.espCharImg.src = 'https://i.imgur.com/QGDmq9U.png';
+            this.espCharImg.src = 'https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/character-preview.png';
             this.espWeaponImg = new Image();
             this.espWeaponImg.crossOrigin = 'anonymous';
             this.espWeaponImg.onload = () => { this.espWeaponLoaded = true; if (this.espPreviewCtx) this.renderESPPreview(); };
