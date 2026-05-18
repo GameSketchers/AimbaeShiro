@@ -4,7 +4,7 @@
 // @name:ja          AimbaeShiro – Krunker.IO チート
 // @name:az          AimbaeShiro – Krunker.IO Hilesi
 // @namespace        https://github.com/GameSketchers/AimbaeShiro
-// @version          1.6.3
+// @version          1.6.4
 // @description      Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr   Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja   Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -707,8 +707,40 @@
 .anonimbiri-hotkey-content p{color:#6b5570;font-size:13px;margin-bottom:12px;font-family:'Rajdhani',sans-serif;}
 .anonimbiri-hotkey-content p span{color:#fd79a8;font-weight:700;}
 
-#shiro-menu-button{height:80px;background-color:rgba(28,19,40,.9);border:1px solid rgba(232,67,147,.3);cursor:pointer;background-image:url('https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/logo.png');background-size:cover;background-position:center;background-repeat:no-repeat;transition:all .3s ease;border-radius:8px;}
-#shiro-menu-button:hover{border-color:#e84393;box-shadow:0 0 20px rgba(232,67,147,0.25);}
+#shiro-menu-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px 0 6px;
+    height: 45px;
+    margin-right: 15px;
+    background-color: rgba(28,19,40,.9);
+    border: 1px solid rgba(232,67,147,.3);
+    cursor: pointer;
+    transition: all .3s ease;
+    border-radius: 8px;
+}
+#shiro-menu-button:hover {
+    border-color: #e84393;
+    box-shadow: 0 0 15px rgba(232,67,147,0.25);
+    background-color: rgba(47,34,64,.9);
+}
+.shiro-icon {
+    width: 32px;
+    height: 32px;
+    background-image: url('https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/logo.png');
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+}
+.shiro-label {
+    color: #fd79a8;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
 
 #anonimbiri-notify-wrap{position:fixed;top:16px;right:16px;z-index:20000;display:flex;flex-direction:column;gap:10px}
 .anonimbiri-notify-card{font-family:'Rajdhani',sans-serif;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(28,19,40,.95);border:1px solid rgba(232,67,147,.25);border-radius:12px;backdrop-filter:blur(6px);width:min(92vw,360px);cursor:default;transform:translateX(calc(100%+20px));opacity:0;transition:transform .35s ease,opacity .35s ease;}
@@ -754,12 +786,15 @@
 
             Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
 
-            this.waitFor(() => window.menuItemContainer).then(menu => {
-                if (menu && !document.getElementById('shiro-menu-button')) {
-                    const btn = document.createElement("div"); btn.id = 'shiro-menu-button'; btn.className = "menuItem"; btn.innerHTML = ``;
+            this.waitFor(() => document.querySelector('.headerBarRight')).then(headerRight => {
+                if (headerRight && !document.getElementById('shiro-menu-button')) {
+                    const btn = document.createElement("div");
+                    btn.id = 'shiro-menu-button';
+                    btn.innerHTML = `<div class="shiro-icon"></div><span class="shiro-label">AimbaeShiro</span>`;
+
                     btn.addEventListener("click", () => this.showGUI());
                     btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
-                    menu.prepend(btn);
+                    headerRight.prepend(btn);
                 }
             });
         }
