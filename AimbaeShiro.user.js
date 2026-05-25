@@ -4,11 +4,11 @@
 // @name:ja          AimbaeShiro – Krunker.IO チート
 // @name:az          AimbaeShiro – Krunker.IO Hilesi
 // @namespace        https://github.com/GameSketchers/AimbaeShiro
-// @version          1.6.4
+// @version          1.6.5
 // @description      Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr   Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja   Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
-// @description:az   Krunker.io Hilesi 2025: Anime Aimbot, ESP/Wallhack, Pulsuz Skinlər, Bhop Skript. İşlək və güncəl mod menyu.
+// @description:az   Krunker.io Hilesi 2025: Anime Aimbot, ESP/Wallhack, Pulsuz Skinlər, Bhop Skript. İşlək ve güncəl mod menyu.
 // @author           anonimbiri
 // @match            *://krunker.io/*
 // @match            *://*.browserfps.com/*
@@ -23,7 +23,8 @@
 // @tag              games
 // @license          MIT
 // @noframes
-// @downloadURL none
+// @downloadURL https://update.greasyfork.org/scripts/538607/AimbaeShiro%20%E2%80%93%20KrunkerIO%20Cheat.user.js
+// @updateURL https://update.greasyfork.org/scripts/538607/AimbaeShiro%20%E2%80%93%20KrunkerIO%20Cheat.meta.js
 // ==/UserScript==
 
 (function(uniqueId, CRC2d) {
@@ -46,12 +47,15 @@
             this.three = null;
             this.vars = {};
             this.exports = null;
+            this.gameVersion = '';
             this.gameJS = '';
             this.weaponIconCache = {};
             this.notifyContainer = null;
             this.legitTarget = null;
             this.lastTargetChangeTime = 0;
             this.aimOffset = { x: 0, y: 0 };
+
+            this.lastWireframeState = null;
 
             this.PLAYER_HEIGHT = 11;
             this.PLAYER_WIDTH = 4;
@@ -109,6 +113,9 @@
                 adsTremorReduction: 50,
                 aimRandomness: 1.5,
                 aimTremor: 0.2,
+                thirdPersonEnabled: false,
+                alwaysTrail: false,
+                weaponZoom: 1.0,
             };
             this.defaultHotkeys = {
                 toggleMenu: 'F1',
@@ -348,6 +355,7 @@
                             node.remove(); observer.disconnect();
                             this.gameJS = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
                             const patchedScript = this.patchGameScript(this.gameJS);
+                            this.gameVersion = /var\s+[^\s=]+\s*=\s*['"]([0-9]+\.[0-9]+\.[0-9]+)['"]\s*;[\s\S]*?process\.env\.CUSTOM_VERSION/s.exec(this.gameJS)[1];
                             window.addEventListener('load', () => { Function(patchedScript)(); });
                             return;
                         }
@@ -364,9 +372,13 @@
                 inView: { regex: /([^\s=.]+)\.([^\s=]+)\s*=\s*\([^;]+;\s*if\s*\(\1\.latestData\)/s, index: 2 },
                 procInputs: { regex: /for\s*\(\s*var\s+[^\s=]+\s*=\s*0;\s*[^\s<]+\s*<\s*this\.[^;]+;\s*\+\+[^\s)]+\s*\)\s*{\s*this\.([^\s(]+)\([^)]+\);\s*}\s*this\.[^\s(]+\(\);/s, index: 1 },
                 weaponIndex: { regex: /}\s*else\s*{\s*this\.[^\s=\[]+\[this\.([^\s=\]]+)\]\s*=\s*[^;]+;\s*}\s*[^.\s]+\.updatePlayerAmmo\(this\);/s, index: 1 },
+                //gameVersion: { regex: /(var\s+[^\s=]+\s*=\s*)['"][0-9]+\.[0-9]+\.[0-9]+['"](\s*;[\s\S]*?process\.env\.CUSTOM_VERSION)/s, patch: `$1"9.2.2"$2` },
+                fixHowler: { regex: /Howler\.orientation\([^;]+\);/g, patch: "/* Howler Orientation Removed By Anonimbiri */" },
                 respawnT: { regex: /(:\s*)\(parseFloat\([^)]+\)\s*\|\|\s*0\)\s*\*\s*1000/g, patch: `$10` },
                 anticheat1: { regex: /if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
                 commandline: { regex: /Object\.defineProperty\(console,\s*['_"]_commandLineAPI['_"][\s\S]*?}\);?/g, patch: "/* Antidebug removed by anonimbiri */" },
+                writeable:{regex: /writeable:\sfalse,/g, patch: 'writeable: true,'},
+                configurable:{regex: /configurable:\sfalse,/g, patch: 'configurable: true,'},
                 typeError: {regex: /throw new TypeError/g, patch: "console.error"},
                 error: { regex: /throw new Error/g, patch: "console.error" },
             };
@@ -413,8 +425,10 @@
                     set(value) {
                         if(cheatInstance.three == null){
                             console.log("🌸 AimbaeShiro: THREE object captured!");
-                            cheatInstance.three = value; cheatInstance.tempVector = new value.Vector3();
-                            cheatInstance.cameraPos = new value.Vector3(); cheatInstance.rayC = new value.Raycaster();
+                            cheatInstance.three = value;
+                            cheatInstance.tempVector = new value.Vector3();
+                            cheatInstance.cameraPos = new value.Vector3();
+                            cheatInstance.rayC = new value.Raycaster();
                             cheatInstance.vec2 = new value.Vector2(0, 0);
                         }
                         this['_value'] = value;
@@ -480,6 +494,14 @@
                     set(value) { this.inViewBot = value; },
                     get() { const isEnemy = !this.team || (cheatInstance.me && this.team !== cheatInstance.me.team); return isEnemy && (cheatInstance.settings.espSquare || cheatInstance.settings.espNameTags) ? false : this.inViewBot; },
                 },
+                thirdPerson: {
+                    set(value) { this['_thirdPerson'] = value; },
+                    get() { return cheatInstance.settings.thirdPersonEnabled ? true : (this['_thirdPerson'] !== undefined ? this['_thirdPerson'] : false); }
+                },
+                trail: {
+                    set(value) { this['_trail'] = value; },
+                    get() { return cheatInstance.settings.alwaysTrail ? true : this['_trail']; }
+                },
             });
         }
 
@@ -492,14 +514,25 @@
                     get: (target, prop) => { if (prop === this.isProxy) return true; return Reflect.get(target, prop); }
                 });
             }
-            if (this.renderer.scene) {
-                this.renderer.scene.traverse(child => {
-                    if (child.material && child.type == 'Mesh' && child.name != '' && child.isObject3D && !child.isModel && child.isMesh){
-                        if (Array.isArray(child.material)) { for (const material of child.material) material.wireframe = this.settings.wireframeEnabled; }
-                        else child.material.wireframe = this.settings.wireframeEnabled;
-                    }
-                });
+
+            if (this.settings.weaponZoom !== 1.0 && this.me.aimVal < 1) {
+                if(this.renderer.camera) this.renderer.camera.zoom = this.settings.weaponZoom;
+            } else if (this.renderer.camera && this.renderer.camera.zoom !== 1.0) {
+                this.renderer.camera.zoom = 1.0;
             }
+
+            if (this.lastWireframeState !== this.settings.wireframeEnabled) {
+                this.lastWireframeState = this.settings.wireframeEnabled;
+                if (this.renderer.scene) {
+                    this.renderer.scene.traverse(child => {
+                        if (child.material && child.type == 'Mesh' && child.name != '' && child.isObject3D && !child.isModel && child.isMesh){
+                            if (Array.isArray(child.material)) { for (const material of child.material) material.wireframe = this.settings.wireframeEnabled; }
+                            else child.material.wireframe = this.settings.wireframeEnabled;
+                        }
+                    });
+                }
+            }
+
             const original_strokeStyle = this.ctx.strokeStyle; const original_lineWidth = this.ctx.lineWidth;
             const original_font = this.ctx.font; const original_fillStyle = this.ctx.fillStyle;
             CRC2d.save.apply(this.ctx, []);
@@ -510,7 +543,7 @@
                 this.ctx.shadowColor = 'rgba(255, 0, 128, 1)'; this.ctx.shadowBlur = 10; this.ctx.stroke(); this.ctx.shadowBlur = 0;
             }
             for (const player of this.game.players.list) { if (player.isYou || !player.active || !player.objInstances) continue; this.drawCanvasESP(player, false); }
-            if(this.settings.espBotCheck){ for (const bot of this.game.AI.ais) { if (!bot.mesh && !bot.mesh.visible && bot.health >! 0) continue; this.drawCanvasESP(bot, true); } }
+            if(this.settings.espBotCheck){ for (const bot of this.game.AI.ais) { if (!bot.mesh || !bot.mesh.visible || bot.health <= 0) continue; this.drawCanvasESP(bot, true); } }
             CRC2d.restore.apply(this.ctx, []);
             this.ctx.strokeStyle = original_strokeStyle; this.ctx.lineWidth = original_lineWidth;
             this.ctx.font = original_font; this.ctx.fillStyle = original_fillStyle;
@@ -534,19 +567,41 @@
 
             let target = null;
             if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
-                let potentialTargets = this.game.players.list
-                .filter(p => this.isDefined(p) && !p.isYou && p.active && p.health > 0 && (!this.settings.aimbotTeamCheck || !this.isTeam(p)) && (!this.settings.aimbotWallCheck || this.getCanSee(p)))
-                .map(p => ({ ...p, isBot: false }));
-                if (this.settings.aimbotBotCheck && this.game.AI?.ais) {
-                    const botTargets = this.game.AI.ais.filter(bot => bot.mesh && bot.mesh.visible && bot.health > 0 && (!this.settings.aimbotWallCheck || this.getCanSee(bot))).map(bot => ({ ...bot, isBot: true }));
-                    potentialTargets = potentialTargets.concat(botTargets);
+                let potentialTargets = [];
+
+                for (let i = 0; i < this.game.players.list.length; i++) {
+                    const p = this.game.players.list[i];
+                    if (this.isDefined(p) && !p.isYou && p.active && p.health > 0 &&
+                       (!this.settings.aimbotTeamCheck || !this.isTeam(p)) &&
+                       (!this.settings.aimbotWallCheck || this.getCanSee(p))) {
+                        p.isBot = false;
+                        potentialTargets.push(p);
+                    }
                 }
-                potentialTargets.sort((a, b) => this.getDistance(this.me, a) - this.getDistance(this.me, b));
+
+                if (this.settings.aimbotBotCheck && this.game.AI?.ais) {
+                    for (let i = 0; i < this.game.AI.ais.length; i++) {
+                        const bot = this.game.AI.ais[i];
+                        if (bot.mesh && bot.mesh.visible && bot.health > 0 &&
+                           (!this.settings.aimbotWallCheck || this.getCanSee(bot))) {
+                            bot.isBot = true;
+                            potentialTargets.push(bot);
+                        }
+                    }
+                }
+
+                potentialTargets.sort((a, b) => this.getDistanceSq(this.me, a) - this.getDistanceSq(this.me, b));
+
                 if (this.settings.fovSize > 0) {
-                    const fovRadius = this.settings.fovSize; const centerX = this.overlay.canvas.width / 2; const centerY = this.overlay.canvas.height / 2;
+                    const fovRadiusSq = this.settings.fovSize * this.settings.fovSize;
+                    const centerX = this.overlay.canvas.width / 2;
+                    const centerY = this.overlay.canvas.height / 2;
+
                     potentialTargets = potentialTargets.filter(p => {
-                        const screenPos = this.world2Screen(new this.three.Vector3(p.x, p.y, p.z)); if (!screenPos) return false;
-                        return Math.sqrt(Math.pow(screenPos.x - centerX, 2) + Math.pow(screenPos.y - centerY, 2)) <= fovRadius;
+                        const screenPos = this.world2Screen({ x: p.x, y: p.y, z: p.z });
+                        if (!screenPos) return false;
+                        const distSq = (screenPos.x - centerX)**2 + (screenPos.y - centerY)**2;
+                        return distSq <= fovRadiusSq;
                     });
                 }
                 target = potentialTargets[0] || null;
@@ -554,42 +609,57 @@
 
             if (target && this.me.reloadTimer === 0 && this.game.gameState !== 4 && this.game.gameState !== 5) {
                 const isMelee = this.me.weapon.melee; const closeRange = 17.6; const throwRange = 65.2;
-                const distance = this.getDistance(this.me, target);
-                if (isMelee && distance > (this.me.weapon.canThrow ? throwRange : closeRange)) { /* out of range */ }
+                const distance = Math.sqrt(this.getDistanceSq(this.me, target));
+
+                if (isMelee && distance > (this.me.weapon.canThrow ? throwRange : closeRange)) { }
                 else {
+                    const targetY = target.isBot ? (target.y - target.dat.mSize / 2) : (target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset);
+                    const yDire = this.getDirection(this.me.z, this.me.x, target.z, target.x);
+                    const xDire = this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, targetY, target.z) - (0.3 * this.me.recoilAnimY);
+
                     if (this.settings.legitAimbot) {
                         let adsReduction = 1.0; if (this.me.aimVal < 1) { adsReduction = 1.0 - (this.settings.adsTremorReduction / 100.0); }
+
                         if (this.legitTarget !== target) {
-                            this.legitTarget = target; this.lastTargetChangeTime = Date.now();
+                            this.legitTarget = target;
+                            this.lastTargetChangeTime = Date.now();
                             this.aimOffset.x = (Math.random() - 0.5) * (this.settings.aimRandomness * adsReduction);
                             this.aimOffset.y = (Math.random() - 0.5) * (this.settings.aimRandomness * adsReduction);
                         }
+
                         const wanderAmount = this.settings.aimRandomness * adsReduction;
-                        this.aimOffset.x += (Math.random() - 0.5) * wanderAmount * 0.1; this.aimOffset.y += (Math.random() - 0.5) * wanderAmount * 0.1;
+                        this.aimOffset.x += (Math.random() - 0.5) * wanderAmount * 0.1;
+                        this.aimOffset.y += (Math.random() - 0.5) * wanderAmount * 0.1;
                         this.aimOffset.x = Math.max(-wanderAmount, Math.min(wanderAmount, this.aimOffset.x));
                         this.aimOffset.y = Math.max(-wanderAmount, Math.min(wanderAmount, this.aimOffset.y));
-                        const targetY = target.isBot ? (target.y - target.dat.mSize / 2) : (target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset);
-                        const yDire = this.getDirection(this.me.z, this.me.x, target.z, target.x);
-                        const xDire = this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, targetY, target.z);
-                        const currentY = this.controls.object.rotation.y; const currentX = this.controls[this.vars.pchObjc].rotation.x;
-                        const finalX = xDire - (0.3 * this.me.recoilAnimY) + this.aimOffset.y * 0.01;
+
+                        const currentY = this.controls.object.rotation.y;
+                        const currentX = this.controls[this.vars.pchObjc].rotation.x;
+
+                        const finalX = xDire + this.aimOffset.y * 0.01;
                         const finalY = yDire + this.aimOffset.x * 0.01;
+
                         const flickFactor = this.settings.flickSpeed * 0.01;
+
                         const shortestAngleY = Math.atan2(Math.sin(finalY - currentY), Math.cos(finalY - currentY));
                         let newY = currentY + shortestAngleY * flickFactor;
-                        const shortestAngleX = finalX - currentX; let newX = currentX + shortestAngleX * flickFactor;
+
+                        const shortestAngleX = finalX - currentX;
+                        let newX = currentX + shortestAngleX * flickFactor;
+
                         if (this.settings.aimTremor > 0) {
                             const tremorAmount = this.settings.aimTremor * adsReduction;
-                            newX += (Math.random() - 0.5) * tremorAmount * 0.01; newY += (Math.random() - 0.5) * tremorAmount * 0.01;
+                            newX += (Math.random() - 0.5) * tremorAmount * 0.01;
+                            newY += (Math.random() - 0.5) * tremorAmount * 0.01;
                         }
+
                         if (!this.settings.superSilentEnabled) this.lookDir(newX, newY);
                         inputPacket[gameInputIndices.xdir] = newX * 1000; inputPacket[gameInputIndices.ydir] = newY * 1000;
                     } else {
-                        const yDire = (this.getDirection(this.me.z, this.me.x, target.z, target.x) || 0);
-                        const xDire = target.isBot ? ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.dat.mSize / 2, target.z) || 0) - (0.3 * this.me.recoilAnimY)) : ((this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset, target.z) || 0) - (0.3 * this.me.recoilAnimY));
                         if (!this.settings.superSilentEnabled) this.lookDir(xDire, yDire);
                         inputPacket[gameInputIndices.xdir] = xDire * 1000; inputPacket[gameInputIndices.ydir] = yDire * 1000;
                     }
+
                     if (this.settings.autoFireEnabled) {
                         this.playerMaps.length = 0; this.rayC.setFromCamera(this.vec2, this.renderer.fpsCamera);
                         this.playerMaps = this.game.players.list.map(p => p.objInstances).filter(Boolean);
@@ -609,7 +679,9 @@
                 }
             } else if (!target && this.game.gameState !== 4 && this.game.gameState !== 5) {
                 this.legitTarget = null;
-                if (!this.settings.superSilentEnabled && !this.settings.antiAimEnabled) this.resetLookAt();
+                if (!this.settings.superSilentEnabled && !this.settings.antiAimEnabled) {
+                    this.resetLookAt();
+                }
                 if (this.settings.antiAimEnabled && !this.me.didShoot && this.me.aimVal !== 0){ inputPacket[gameInputIndices.xdir] = -Math.PI * 500; }
             } else if (this.me.weapon.nAuto && this.me.didShoot) {
                 inputPacket[gameInputIndices.shoot] = 0; inputPacket[gameInputIndices.scope] = 0;
@@ -840,6 +912,9 @@
                 bhopEnabled:'Hold space auto-jump.', antiAimEnabled:'Makes you harder to hit.',
                 autoNuke:'Auto nuke when available.', antikick:'Prevents inactivity kick.',
                 autoReload:'Auto reload when empty.',
+                thirdPersonEnabled: 'Play in 3rd person view.',
+                alwaysTrail: 'Always show bullet trails.',
+                weaponZoom: 'Adjust ADS zoom level (1 = default).'
             };
 
             setTimeout(() => {
@@ -883,6 +958,9 @@
                         </div>
                         <div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">
                             <div class="anonimbiri-section">Visuals</div>
+                            ${this.createMenuItemHTML('toggle','thirdPersonEnabled','Third Person', I.robot, tips.thirdPersonEnabled)}
+                            ${this.createMenuItemHTML('toggle','alwaysTrail','Weapon Trails', I.line, tips.alwaysTrail)}
+                            ${this.createMenuItemHTML('slider','weaponZoom','Weapon Zoom', I.fov, tips.weaponZoom, 0.1, 5.0, 0.1)}
                             ${this.createMenuItemHTML('toggle','espSquare','ESP Box', I.espSquare, tips.espSquare)}
                             ${this.createMenuItemHTML('toggle','espLines','ESP Lines', I.line, tips.espLines)}
                             ${this.createMenuItemHTML('toggle','espNameTags','Name Tags', I.nameTags, tips.espNameTags)}
@@ -1083,9 +1161,9 @@
 
         isDefined(val) { return val !== undefined && val !== null; }
         isTeam(player) { return this.me && this.me.team ? this.me.team === player.team : false; }
-        getDistance(p1, p2) { return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2) + Math.pow(p2.z - p1.z, 2)); }
+        getDistanceSq(p1, p2) { return (p2.x - p1.x)**2 + (p2.y - p1.y)**2 + (p2.z - p1.z)**2; }
         getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
-        getXDirection(t,e,o,i,s,n){const r=s-e,a=this.getDistance({x:t,y:e,z:o},{x:i,y:s,z:n});return Math.asin(r/a)}
+        getXDirection(t,e,o,i,s,n){const r=s-e,a=Math.sqrt((i-t)**2+(s-e)**2+(n-o)**2);return Math.asin(r/a)}
 
         containsPoint(point) { let planes = this.renderer.frustum.planes; for (let i = 0; i < 6; i ++) { if (planes[i].distanceToPoint(point) < 0) { return false; } } return true; }
 
@@ -1100,7 +1178,7 @@
         getCanSee(player, boxSize) {
             const from = this.me; if (!from || !this.game?.map?.manager?.objects) return true;
             boxSize = boxSize || 0; const toX = player.x, toY = player.y, toZ = player.z; let penetrableWallsHit = 0;
-            for (let obj, dist = this.getDistance(from, player), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(this.getDistance({x: from.x, y: 0, z: from.z}, {x: toX, y: 0, z: toZ}), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
+            for (let obj, dist = Math.sqrt((toX-from.x)**2+(toY-from.y)**2+(toZ-from.z)**2), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(Math.sqrt((toX-from.x)**2+(toZ-from.z)**2), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
                 let tmpDst;
                 if (!(obj = this.game.map.manager.objects[i]).noShoot && obj.active && obj.transparent !== false &&
                     (tmpDst = this.lineInRect(from.x, from.z, yOffset, dx, dz, dy, obj.x - Math.max(0, obj.width - boxSize), obj.z - Math.max(0, obj.length - boxSize), obj.y - Math.max(0, obj.height - boxSize), obj.x + Math.max(0, obj.width - boxSize), obj.z + Math.max(0, obj.length - boxSize), obj.y + Math.max(0, obj.height - boxSize))) && 1 > tmpDst) {
@@ -1126,39 +1204,55 @@
 
         lookDir(xDire, yDire) {
             this.controls.object.rotation.y = yDire;
-            this.controls[this.vars.pchObjc].rotation.x = xDire;
-            this.controls[this.vars.pchObjc].rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.controls[this.vars.pchObjc].rotation.x));
-            this.controls.yDr = (this.controls[this.vars.pchObjc].rotation.x % Math.PI).round(3);
-            this.controls.xDr = (this.controls.object.rotation.y % Math.PI).round(3);
-            this.renderer.camera.updateProjectionMatrix(); this.renderer.updateFrustum();
+            this.controls[this.vars.pchObjc].rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, xDire));
+            this.controls.yDr = this.controls[this.vars.pchObjc].rotation.x % Math.PI;
+            this.controls.xDr = this.controls.object.rotation.y % Math.PI;
+            this.renderer.camera.updateProjectionMatrix();
+            this.renderer.updateFrustum();
         }
 
         resetLookAt() {
-            this.controls.yDr = this.controls[this.vars.pchObjc].rotation.x;
-            this.controls.xDr = this.controls.object.rotation.y;
-            this.renderer.camera.updateProjectionMatrix(); this.renderer.updateFrustum();
+            this.controls.object.rotation.y = this.controls.xDr;
+            this.controls[this.vars.pchObjc].rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, this.controls.yDr));
+            this.renderer.camera.updateProjectionMatrix();
+            this.renderer.updateFrustum();
         }
 
         world2Screen(worldPosition) {
             if (!this.renderer?.camera || !this.overlay?.canvas) return null;
-            const pos = worldPosition.clone(); pos.project(this.renderer.camera);
-            if (pos.z > 1) return null;
-            return { x: (pos.x + 1) / 2 * this.overlay.canvas.width, y: (-pos.y + 1) / 2 * this.overlay.canvas.height };
+            this.tempVector.set(worldPosition.x, worldPosition.y, worldPosition.z);
+            this.tempVector.project(this.renderer.camera);
+            if (this.tempVector.z > 1) return null;
+            return { x: (this.tempVector.x + 1) / 2 * this.overlay.canvas.width, y: (-this.tempVector.y + 1) / 2 * this.overlay.canvas.height };
         }
 
         drawCanvasESP(player, isBot) {
             if (this.settings.espTeamCheck && this.isTeam(player)) return;
-            const playerPos = new this.three.Vector3(player.x, player.y, player.z);
+            const playerPos = { x: player.x, y: player.y, z: player.z };
             const effectiveHeight = isBot ? player.dat.mSize : (player.height || this.PLAYER_HEIGHT) - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
             const halfWidth = isBot ? (player.dat.mSize * 0.4) / 2 : this.PLAYER_WIDTH / 2;
             const corners = [
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z - halfWidth),
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y, playerPos.z + halfWidth),
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z - halfWidth),
-                new this.three.Vector3(playerPos.x - halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth), new this.three.Vector3(playerPos.x + halfWidth, playerPos.y + effectiveHeight, playerPos.z + halfWidth),
+                { x: playerPos.x - halfWidth, y: playerPos.y, z: playerPos.z - halfWidth },
+                { x: playerPos.x + halfWidth, y: playerPos.y, z: playerPos.z - halfWidth },
+                { x: playerPos.x - halfWidth, y: playerPos.y, z: playerPos.z + halfWidth },
+                { x: playerPos.x + halfWidth, y: playerPos.y, z: playerPos.z + halfWidth },
+                { x: playerPos.x - halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z - halfWidth },
+                { x: playerPos.x + halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z - halfWidth },
+                { x: playerPos.x - halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z + halfWidth },
+                { x: playerPos.x + halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z + halfWidth },
             ];
+
             let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity, onScreen = false;
-            for (const corner of corners) { const screenPos = this.world2Screen(corner); if (screenPos) { onScreen = true; xmin = Math.min(xmin, screenPos.x); xmax = Math.max(xmax, screenPos.x); ymin = Math.min(ymin, screenPos.y); ymax = Math.max(ymax, screenPos.y); } }
+            for (let i = 0; i < corners.length; i++) {
+                const screenPos = this.world2Screen(corners[i]);
+                if (screenPos) {
+                    onScreen = true;
+                    xmin = Math.min(xmin, screenPos.x);
+                    xmax = Math.max(xmax, screenPos.x);
+                    ymin = Math.min(ymin, screenPos.y);
+                    ymax = Math.max(ymax, screenPos.y);
+                }
+            }
             if (!onScreen || !isFinite(xmin + xmax + ymin + ymax)) return;
             const boxWidth = xmax - xmin; const boxHeight = ymax - ymin;
             CRC2d.save.apply(this.ctx, []);
@@ -1229,7 +1323,7 @@
                 CRC2d.fillText.apply(this.ctx, [fullText, infoBoxX + padding, infoBoxY + infoBoxHeight / 2 + 4]);
                 if (weaponIcon && weaponIcon.complete && iconWidth > 0) { this.ctx.drawImage(weaponIcon, infoBoxX + padding + fullTextWidth + padding, infoBoxY + (infoBoxHeight - iconHeight) / 2, iconWidth, iconHeight); }
                 this.ctx.shadowBlur = 0;
-                const distance = Math.round(this.getDistance(this.me, player) / 10);
+                const distance = Math.round(Math.sqrt((this.me.x-player.x)**2+(this.me.y-player.y)**2+(this.me.z-player.z)**2) / 10);
                 this.ctx.textAlign = "center"; this.ctx.fillStyle = "#FFFFFF"; this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
                 CRC2d.fillText.apply(this.ctx, [`[${distance}m]`, xmin + boxWidth / 2, ymax + 14]);
             }
