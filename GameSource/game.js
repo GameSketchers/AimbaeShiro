@@ -32136,7 +32136,11 @@ window.JfCzGzvGIQB8rrJX = { isProxy: true };
     connected: false,
     socketId: -1,
     sendQueue: [],
-    events: null,
+    /* * STATUS: Deleted
+    * ACTION: Removed the events property
+    * PREVIOUS: events: null,
+    * NOTE: This event listener/handler reference has been completely cleared and is no longer in use.
+    */
     trackPacketStats: false,
     tickPacketCount: 0,
     ingressPacketCount: 0,
