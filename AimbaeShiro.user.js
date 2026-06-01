@@ -4,7 +4,7 @@
 // @name:ja          AimbaeShiro – Krunker.IO チート
 // @name:az          AimbaeShiro – Krunker.IO Hilesi
 // @namespace        https://github.com/GameSketchers/AimbaeShiro
-// @version          1.6.5
+// @version          1.6.6
 // @description      Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr   Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja   Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -23,8 +23,6 @@
 // @tag              games
 // @license          MIT
 // @noframes
-// @downloadURL https://update.greasyfork.org/scripts/538607/AimbaeShiro%20%E2%80%93%20KrunkerIO%20Cheat.user.js
-// @updateURL https://update.greasyfork.org/scripts/538607/AimbaeShiro%20%E2%80%93%20KrunkerIO%20Cheat.meta.js
 // ==/UserScript==
 
 (function(uniqueId, CRC2d) {
@@ -355,7 +353,7 @@
                             node.remove(); observer.disconnect();
                             this.gameJS = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
                             const patchedScript = this.patchGameScript(this.gameJS);
-                            this.gameVersion = /var\s+[^\s=]+\s*=\s*['"]([0-9]+\.[0-9]+\.[0-9]+)['"]\s*;[\s\S]*?process\.env\.CUSTOM_VERSION/s.exec(this.gameJS)[1];
+                            this.gameVersion = /let\s+[^\s=]+\s*=\s*['"]([0-9]+\.[0-9]+\.[0-9]+)['"]\s*;\s*let\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*let\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION/s.exec(this.gameJS)[1];
                             window.addEventListener('load', () => { Function(patchedScript)(); });
                             return;
                         }
@@ -372,7 +370,7 @@
                 inView: { regex: /([^\s=.]+)\.([^\s=]+)\s*=\s*\([^;]+;\s*if\s*\(\1\.latestData\)/s, index: 2 },
                 procInputs: { regex: /for\s*\(\s*var\s+[^\s=]+\s*=\s*0;\s*[^\s<]+\s*<\s*this\.[^;]+;\s*\+\+[^\s)]+\s*\)\s*{\s*this\.([^\s(]+)\([^)]+\);\s*}\s*this\.[^\s(]+\(\);/s, index: 1 },
                 weaponIndex: { regex: /}\s*else\s*{\s*this\.[^\s=\[]+\[this\.([^\s=\]]+)\]\s*=\s*[^;]+;\s*}\s*[^.\s]+\.updatePlayerAmmo\(this\);/s, index: 1 },
-                //gameVersion: { regex: /(var\s+[^\s=]+\s*=\s*)['"][0-9]+\.[0-9]+\.[0-9]+['"](\s*;[\s\S]*?process\.env\.CUSTOM_VERSION)/s, patch: `$1"9.2.2"$2` },
+                //gameVersion: { regex: /(let\s+[^\s=]+\s*=\s*)['"][0-9]+\.[0-9]+\.[0-9]+['"](\s*;\s*let\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*let\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION)/s, patch: `$1"9.2.3"$2` },
                 fixHowler: { regex: /Howler\.orientation\([^;]+\);/g, patch: "/* Howler Orientation Removed By Anonimbiri */" },
                 respawnT: { regex: /(:\s*)\(parseFloat\([^)]+\)\s*\|\|\s*0\)\s*\*\s*1000/g, patch: `$10` },
                 anticheat1: { regex: /if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
@@ -447,6 +445,7 @@
                     configurable: true,
                     set(eventEmitter) {
                         this['_events'] = eventEmitter;
+                        console.log(this);
                         if (this.ahNum === 0) {
                             cheatInstance.socket = this; cheatInstance.wsEvent = this._dispatchEvent.bind(this); cheatInstance.wsSend = this.send.bind(this);
                             this.send = new Proxy(this.send, {
@@ -572,8 +571,8 @@
                 for (let i = 0; i < this.game.players.list.length; i++) {
                     const p = this.game.players.list[i];
                     if (this.isDefined(p) && !p.isYou && p.active && p.health > 0 &&
-                       (!this.settings.aimbotTeamCheck || !this.isTeam(p)) &&
-                       (!this.settings.aimbotWallCheck || this.getCanSee(p))) {
+                        (!this.settings.aimbotTeamCheck || !this.isTeam(p)) &&
+                        (!this.settings.aimbotWallCheck || this.getCanSee(p))) {
                         p.isBot = false;
                         potentialTargets.push(p);
                     }
@@ -583,7 +582,7 @@
                     for (let i = 0; i < this.game.AI.ais.length; i++) {
                         const bot = this.game.AI.ais[i];
                         if (bot.mesh && bot.mesh.visible && bot.health > 0 &&
-                           (!this.settings.aimbotWallCheck || this.getCanSee(bot))) {
+                            (!this.settings.aimbotWallCheck || this.getCanSee(bot))) {
                             bot.isBot = true;
                             potentialTargets.push(bot);
                         }
@@ -705,7 +704,7 @@
 @keyframes abSlide{from{opacity:0;transform:translate(-50%,calc(-50% - 20px)) scale(.95)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
 
 .anonimbiri-menu-header{width:100%;height:400px;min-height:220px;position:relative;overflow:hidden;border-radius:12px 12px 0 0;flex-shrink:0;}
-.anonimbiri-menu-header::before{content:'';position:absolute;inset:0;background-image:url(https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/banner.jpeg);background-size:cover;background-position:center;z-index:1;}
+.anonimbiri-menu-header::before{content:'';position:absolute;inset:0;background-image:url(https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@main/Assets/banner.png);background-size:cover;background-position:center;z-index:1;}
 .anonimbiri-menu-header::after{content:'';position:absolute;bottom:0;left:0;right:0;height:50px;background:linear-gradient(to top,rgba(28,19,40,.97),transparent);z-index:2;}
 .anonimbiri-petal{position:absolute;width:8px;height:8px;background:radial-gradient(ellipse,#f8a5c2,#e84393);border-radius:50% 0 50% 0;opacity:0;z-index:3;pointer-events:none;animation:abFall linear infinite;}
 @keyframes abFall{0%{opacity:0;transform:translate(0,-20px) rotate(0) scale(.5)}10%{opacity:.5}90%{opacity:.2}100%{opacity:0;transform:translate(80px,220px) rotate(720deg) scale(.1)}}
@@ -827,11 +826,11 @@
 .anonimbiri-notify-action-btn:hover{background:#e84393;color:#fff;}
 `;
 
-            const style = document.createElement('style');
-            style.textContent = menuCSS;
-            document.head.appendChild(style);
+        const style = document.createElement('style');
+        style.textContent = menuCSS;
+        document.head.appendChild(style);
 
-            const hotkeyModalHTML = `
+        const hotkeyModalHTML = `
               <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
                   <div class="anonimbiri-hotkey-content">
                       <h2>🌸 Press a Key</h2>
@@ -839,37 +838,37 @@
                       <p>ESC to cancel · DEL to unbind</p>
                   </div>
               </div>`;
-            const modalContainer = document.createElement('div');
-            modalContainer.innerHTML = hotkeyModalHTML;
-            document.body.appendChild(modalContainer);
-            this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = hotkeyModalHTML;
+        document.body.appendChild(modalContainer);
+        this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-            this.GUI.windowIndex = window.windows.length + 1;
-            this.GUI.windowObj = {
-                closed: false,
-                header: "🌸 AimbaeShiro 🌸",
-                html: "",
-                extraCls: "anonimbiri-menu-container",
-                gen: () => this.getGuiHtml(),
-                hideScroll: true,
-                height: 'calc(100% - 120px)',
-                width: 850,
-            };
+        this.GUI.windowIndex = window.windows.length + 1;
+        this.GUI.windowObj = {
+            closed: false,
+            header: "🌸 AimbaeShiro 🌸",
+            html: "",
+            extraCls: "anonimbiri-menu-container",
+            gen: () => this.getGuiHtml(),
+            hideScroll: true,
+            height: 'calc(100% - 120px)',
+            width: 850,
+        };
 
-            Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
+        Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
 
-            this.waitFor(() => document.querySelector('.headerBarRight')).then(headerRight => {
-                if (headerRight && !document.getElementById('shiro-menu-button')) {
-                    const btn = document.createElement("div");
-                    btn.id = 'shiro-menu-button';
-                    btn.innerHTML = `<div class="shiro-icon"></div><span class="shiro-label">AimbaeShiro</span>`;
+        this.waitFor(() => document.querySelector('.headerBarRight')).then(headerRight => {
+            if (headerRight && !document.getElementById('shiro-menu-button')) {
+                const btn = document.createElement("div");
+                btn.id = 'shiro-menu-button';
+                btn.innerHTML = `<div class="shiro-icon"></div><span class="shiro-label">AimbaeShiro</span>`;
 
-                    btn.addEventListener("click", () => this.showGUI());
-                    btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
-                    headerRight.prepend(btn);
-                }
-            });
-        }
+                btn.addEventListener("click", () => this.showGUI());
+                btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
+                headerRight.prepend(btn);
+            }
+        });
+    }
 
         getGuiHtml() {
             const I = {
