@@ -343,17 +343,17 @@
             ifr.src = location.origin + '/' + (window.location.search ? window.location.search : '');
             ifr.style.display = 'none';
             document.documentElement.append(ifr);
-            ifr.contentWindow.fetch=new Proxy(ifr.contentWindow.fetch,{apply(t,a,[u,...r]){if(typeof u==="string"&&u.includes("/seek-game")){ifr.remove();tokenPromiseResolve(u);return;}return Reflect.apply(t,a,[u,...r]);}});
-            window.fetch=new Proxy(window.fetch,{apply:async(t,a,[u,...r])=>{if(typeof u==="string"&&u.includes("/seek-game"))u=await tokenPromise;return Reflect.apply(t,a,[u,...r]);}});
+            ifr.contentWindow.fetch=new Proxy(ifr.contentWindow.fetch,{apply(t,a,[u,...r]){if(typeof u==="string"&&u.includes("/seek-game")){let v;try{v=JSON.parse(new URL(u,location.origin).searchParams.get("dataQuery"))?.v}catch(e){}ifr.remove();tokenPromiseResolve({u,v});return;}return Reflect.apply(t,a,[u,...r]);}});
+            window.fetch=new Proxy(window.fetch,{apply:async(t,a,[u,...r])=>{if(typeof u==="string"&&u.includes("/seek-game")){const p=await tokenPromise;if(p.v){try{let o=new URL(u,location.origin),q=JSON.parse(o.searchParams.get("dataQuery"));if(q){q.v=p.v;o.searchParams.set("dataQuery",JSON.stringify(q));u=o.toString()}}catch(e){u=p.u||u}}else{u=p.u||u}}return Reflect.apply(t,a,[u,...r]);}});
             function downloadFileSync(url) { var req = new XMLHttpRequest(); req.open('GET', url, false); req.send(); if (req.status === 200) { return req.response; } return null; }
             const observer = new MutationObserver((mutations) => {
                 for (const mutation of mutations) {
                     for (const node of mutation.addedNodes) {
                         if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
                             node.remove(); observer.disconnect();
-                            this.gameJS = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${GM_info.script.version}/GameSource/game.js`);
+                            this.gameJS = downloadFileSync(`https://raw.githubusercontent.com/anonimbiri-IsBack/test/refs/heads/main/game.js`);
                             const patchedScript = this.patchGameScript(this.gameJS);
-                            this.gameVersion = /let\s+[^\s=]+\s*=\s*['"]([0-9]+\.[0-9]+\.[0-9]+)['"]\s*;\s*let\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*let\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION/s.exec(this.gameJS)[1];
+                            this.gameVersion = /(?:let|var|const)\s+[^\s=]+\s*=\s*['"](\d+\.\d+\.\d+)['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION/s.exec(this.gameJS)?.[1];
                             window.addEventListener('load', () => { Function(patchedScript)(); });
                             return;
                         }
@@ -370,7 +370,7 @@
                 inView: { regex: /([^\s=.]+)\.([^\s=]+)\s*=\s*\([^;]+;\s*if\s*\(\1\.latestData\)/s, index: 2 },
                 procInputs: { regex: /for\s*\(\s*var\s+[^\s=]+\s*=\s*0;\s*[^\s<]+\s*<\s*this\.[^;]+;\s*\+\+[^\s)]+\s*\)\s*{\s*this\.([^\s(]+)\([^)]+\);\s*}\s*this\.[^\s(]+\(\);/s, index: 1 },
                 weaponIndex: { regex: /}\s*else\s*{\s*this\.[^\s=\[]+\[this\.([^\s=\]]+)\]\s*=\s*[^;]+;\s*}\s*[^.\s]+\.updatePlayerAmmo\(this\);/s, index: 1 },
-                //gameVersion: { regex: /(let\s+[^\s=]+\s*=\s*)['"][0-9]+\.[0-9]+\.[0-9]+['"](\s*;\s*let\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*let\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION)/s, patch: `$1"9.2.3"$2` },
+                //gameVersion: { regex: /(?:let|var|const)\s+[^\s=]+\s*=\s*['"](\d+\.\d+\.\d+)['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION/s, patch: `$1"9.2.3"$2` },
                 fixHowler: { regex: /Howler\.orientation\([^;]+\);/g, patch: "/* Howler Orientation Removed By Anonimbiri */" },
                 respawnT: { regex: /(:\s*)\(parseFloat\([^)]+\)\s*\|\|\s*0\)\s*\*\s*1000/g, patch: `$10` },
                 anticheat1: { regex: /if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
