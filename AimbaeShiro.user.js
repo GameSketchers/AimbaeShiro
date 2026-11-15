@@ -4,7 +4,7 @@
 // @name:ja          AimbaeShiro – Krunker.IO チート
 // @name:az          AimbaeShiro – Krunker.IO Hilesi
 // @namespace        https://github.com/GameSketchers/AimbaeShiro
-// @version          1.6.8
+// @version          1.6.9
 // @description      Krunker.io Cheat 2025: Anime Aimbot, ESP/Wallhack, Free Skins, Bhop Script. Working & updated mod menu.
 // @description:tr   Krunker.io Hile 2025: Anime Aimbot, ESP/Wallhack, Bedava Skinler, Bhop Script. Çalışan güncel mod menü.
 // @description:ja   Krunker.io チート 2025: アニメエイムボット、ESP/ウォールハック、無料スキン、Bhopスクリプト。動作中の最新MODメニュー。
@@ -25,7 +25,24 @@
 // @noframes
 // ==/UserScript==
 
-(function(uniqueId, CRC2d) {
+(function (uniqueId, CRC2d) {
+    'use strict';
+
+    // Renk dönüşümleri için önbellek (GC dostu)
+    const colorCache = new Map();
+    function hexToRgba(hex, alpha) {
+        const key = `${hex}_${alpha}`;
+        if (colorCache.has(key)) return colorCache.get(key);
+        let r = 0, g = 0, b = 0;
+        if (hex && hex.length === 7) {
+            r = parseInt(hex.slice(1, 3), 16);
+            g = parseInt(hex.slice(3, 5), 16);
+            b = parseInt(hex.slice(5, 7), 16);
+        }
+        const res = `rgba(${r},${g},${b},${alpha})`;
+        colorCache.set(key, res);
+        return res;
+    }
 
     class AimbaeShiro {
         constructor() {
@@ -49,9 +66,14 @@
             this.gameJS = '';
             this.weaponIconCache = {};
             this.notifyContainer = null;
+
+            // --- GELİŞMİŞ İNSAN BENZERİ (HUMAN-LIKE) AIM DEĞİŞKENLERİ ---
             this.legitTarget = null;
             this.lastTargetChangeTime = 0;
+            this.lastAimTime = performance.now();
             this.aimOffset = { x: 0, y: 0 };
+            this.aimVelocity = { x: 0, y: 0 }; // Yay-sönümleyici (Spring-Damper) açısal hız
+            this.noisePhase = Math.random() * 1000; // Organik el titremesi faz başlangıcı
 
             this.lastWireframeState = null;
 
@@ -63,6 +85,10 @@
 
             this.tempVector = null;
             this.cameraPos = null;
+
+            // Bellek (GC) optimizasyonu için önceden ayrılmış diziler
+            this.boxCorners = Array.from({ length: 8 }, () => ({ x: 0, y: 0, z: 0 }));
+            this.potentialTargets = [];
 
             this.isProxy = Symbol('isProxy');
             this.rightMouseDown = false;
@@ -115,6 +141,7 @@
                 alwaysTrail: false,
                 weaponZoom: 1.0,
             };
+
             this.defaultHotkeys = {
                 toggleMenu: 'F1',
                 aimbotEnabled: 'F2',
@@ -210,9 +237,9 @@
             const bx = cx - charW / 2 - boxPad, by = charTop - boxPad, bw = charW + boxPad * 2, bh = charH + boxPad * 2;
 
             if (this.settings.espLines) {
-                const hr = (hex, a) => { let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16); return `rgba(${r},${g},${b},${a})`; };
                 const grad = ctx.createLinearGradient(w / 2, h, cx, by + bh);
-                grad.addColorStop(0, hr(this.settings.espColor, 0.9)); grad.addColorStop(1, hr(this.settings.espColor, 0.1));
+                grad.addColorStop(0, hexToRgba(this.settings.espColor, 0.9));
+                grad.addColorStop(1, hexToRgba(this.settings.espColor, 0.1));
                 ctx.strokeStyle = grad; ctx.lineWidth = 2.5; ctx.shadowColor = this.settings.espColor; ctx.shadowBlur = 15;
                 ctx.beginPath(); ctx.moveTo(w / 2, h); ctx.lineTo(cx, by + bh); ctx.stroke(); ctx.shadowBlur = 0;
             }
@@ -259,7 +286,7 @@
         }
 
         async checkForUpdates() {
-            const current = GM_info.script.version || '0.0.0';
+            const current = (typeof GM_info !== 'undefined' && GM_info?.script?.version) ? GM_info.script.version : '1.6.8';
 
             const getLatestFromGitHub = async () => {
                 try {
@@ -343,15 +370,49 @@
             ifr.src = location.origin + '/' + (window.location.search ? window.location.search : '');
             ifr.style.display = 'none';
             document.documentElement.append(ifr);
-            ifr.contentWindow.fetch=new Proxy(ifr.contentWindow.fetch,{apply(t,a,[u,...r]){if(typeof u==="string"&&u.includes("/seek-game")){let v;try{v=JSON.parse(new URL(u,location.origin).searchParams.get("dataQuery"))?.v}catch(e){}ifr.remove();tokenPromiseResolve({u,v});return;}return Reflect.apply(t,a,[u,...r]);}});
-            window.fetch=new Proxy(window.fetch,{apply:async(t,a,[u,...r])=>{if(typeof u==="string"&&u.includes("/seek-game")){const p=await tokenPromise;if(p.v){try{let o=new URL(u,location.origin),q=JSON.parse(o.searchParams.get("dataQuery"));if(q){q.v=p.v;o.searchParams.set("dataQuery",JSON.stringify(q));u=o.toString()}}catch(e){u=p.u||u}}else{u=p.u||u}}return Reflect.apply(t,a,[u,...r]);}});
-            function downloadFileSync(url) { var req = new XMLHttpRequest(); req.open('GET', url, false); req.send(); if (req.status === 200) { return req.response; } return null; }
+            ifr.contentWindow.fetch = new Proxy(ifr.contentWindow.fetch, {
+                apply(t, a, [u, ...r]) {
+                    if (typeof u === "string" && u.includes("/seek-game")) {
+                        let v;
+                        try { v = JSON.parse(new URL(u, location.origin).searchParams.get("dataQuery"))?.v; } catch (e) {}
+                        ifr.remove();
+                        tokenPromiseResolve({ u, v });
+                        return;
+                    }
+                    return Reflect.apply(t, a, [u, ...r]);
+                }
+            });
+            window.fetch = new Proxy(window.fetch, {
+                apply: async (t, a, [u, ...r]) => {
+                    if (typeof u === "string" && u.includes("/seek-game")) {
+                        const p = await tokenPromise;
+                        if (p.v) {
+                            try {
+                                let o = new URL(u, location.origin), q = JSON.parse(o.searchParams.get("dataQuery"));
+                                if (q) { q.v = p.v; o.searchParams.set("dataQuery", JSON.stringify(q)); u = o.toString(); }
+                            } catch (e) { u = p.u || u; }
+                        } else { u = p.u || u; }
+                    }
+                    return Reflect.apply(t, a, [u, ...r]);
+                }
+            });
+
+            function downloadFileSync(url) {
+                var req = new XMLHttpRequest();
+                req.open('GET', url, false);
+                req.send();
+                if (req.status === 200) { return req.response; }
+                return null;
+            }
+
             const observer = new MutationObserver((mutations) => {
                 for (const mutation of mutations) {
                     for (const node of mutation.addedNodes) {
                         if (node.tagName === 'SCRIPT' && node.src && node.src.includes('/static/index-')) {
-                            node.remove(); observer.disconnect();
-                            this.gameJS = downloadFileSync(`https://raw.githubusercontent.com/anonimbiri-IsBack/test/refs/heads/main/game.js`);
+                            node.remove();
+                            observer.disconnect();
+                            const scriptVer = (typeof GM_info !== 'undefined' && GM_info?.script?.version) ? GM_info.script.version : '1.6.9';
+                            this.gameJS = downloadFileSync(`https://cdn.jsdelivr.net/gh/GameSketchers/AimbaeShiro@${scriptVer}/GameSource/game.js`);
                             const patchedScript = this.patchGameScript(this.gameJS);
                             this.gameVersion = /(?:let|var|const)\s+[^\s=]+\s*=\s*['"](\d+\.\d+\.\d+)['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION/s.exec(this.gameJS)?.[1];
                             window.addEventListener('load', () => { Function(patchedScript)(); });
@@ -370,14 +431,13 @@
                 inView: { regex: /([^\s=.]+)\.([^\s=]+)\s*=\s*\([^;]+;\s*if\s*\(\1\.latestData\)/s, index: 2 },
                 procInputs: { regex: /for\s*\(\s*var\s+[^\s=]+\s*=\s*0;\s*[^\s<]+\s*<\s*this\.[^;]+;\s*\+\+[^\s)]+\s*\)\s*{\s*this\.([^\s(]+)\([^)]+\);\s*}\s*this\.[^\s(]+\(\);/s, index: 1 },
                 weaponIndex: { regex: /}\s*else\s*{\s*this\.[^\s=\[]+\[this\.([^\s=\]]+)\]\s*=\s*[^;]+;\s*}\s*[^.\s]+\.updatePlayerAmmo\(this\);/s, index: 1 },
-                //gameVersion: { regex: /(?:let|var|const)\s+[^\s=]+\s*=\s*['"](\d+\.\d+\.\d+)['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*[^\s=]+\s*\+\s*['"][^'"]+['"]\s*;\s*(?:let|var|const)\s+[^\s=]+\s*=\s*process\.env\.CUSTOM_VERSION/s, patch: `$1"9.2.3"$2` },
                 fixHowler: { regex: /Howler\.orientation\([^;]+\);/g, patch: "/* Howler Orientation Removed By Anonimbiri */" },
                 respawnT: { regex: /(:\s*)\(parseFloat\([^)]+\)\s*\|\|\s*0\)\s*\*\s*1000/g, patch: `$10` },
                 anticheat1: { regex: /if\s*\(\s*window\.utilities\s*\)\s*\{[\s\S]*?\}/, patch: '/* Anticheat Removed By Anonimbiri */' },
                 commandline: { regex: /Object\.defineProperty\(console,\s*['_"]_commandLineAPI['_"][\s\S]*?}\);?/g, patch: "/* Antidebug removed by anonimbiri */" },
-                writeable:{regex: /writeable:\sfalse,/g, patch: 'writeable: true,'},
-                configurable:{regex: /configurable:\sfalse,/g, patch: 'configurable: true,'},
-                typeError: {regex: /throw new TypeError/g, patch: "console.error"},
+                writeable: { regex: /writeable:\sfalse,/g, patch: 'writeable: true,' },
+                configurable: { regex: /configurable:\sfalse,/g, patch: 'configurable: true,' },
+                typeError: { regex: /throw new TypeError/g, patch: "console.error" },
                 error: { regex: /throw new Error/g, patch: "console.error" },
             };
             for (const name in entries) {
@@ -421,7 +481,7 @@
                 THREE: {
                     configurable: true,
                     set(value) {
-                        if(cheatInstance.three == null){
+                        if (cheatInstance.three == null) {
                             console.log("🌸 AimbaeShiro: THREE object captured!");
                             cheatInstance.three = value;
                             cheatInstance.tempVector = new value.Vector3();
@@ -436,7 +496,7 @@
                 skins: {
                     set(skinsArray) {
                         this[originalSkinsSymbol] = skinsArray;
-                        if (!this[localSkinsSymbol]) { this[localSkinsSymbol] = Array.apply(null, Array(25000)).map((_, i) => { return { ind: i, cnt: 1, }}); }
+                        if (!this[localSkinsSymbol]) { this[localSkinsSymbol] = Array.apply(null, Array(25000)).map((_, i) => { return { ind: i, cnt: 1, }; }); }
                         return skinsArray;
                     },
                     get() { return cheatInstance.settings.unlockSkins && this.stats ? this[localSkinsSymbol] : this[originalSkinsSymbol]; },
@@ -449,9 +509,9 @@
                             cheatInstance.socket = this; cheatInstance.wsEvent = this._dispatchEvent.bind(this); cheatInstance.wsSend = this.send.bind(this);
                             this.send = new Proxy(this.send, {
                                 apply(target, thisArg, [type, ...message]) {
-                                    if (type=="ah2") return; let data = message[0];
+                                    if (type == "ah2") return; let data = message[0];
                                     if (type === 'en' && data) { cheatInstance.skinCache = { main: data[2][0], secondary: data[2][1], hat: data[3], body: data[4], knife: data[9], dye: data[14], waist: data[17], playerCard: data[32] }; }
-                                    if(cheatInstance.settings.unlockSkins && type === 'spry' && data && data !== 4577){ cheatInstance.skinCache.spray = data; message[0] = 4577; }
+                                    if (cheatInstance.settings.unlockSkins && type === 'spry' && data && data !== 4577) { cheatInstance.skinCache.spray = data; message[0] = 4577; }
                                     return target.apply(thisArg, [type, ...message]);
                                 }
                             });
@@ -514,7 +574,7 @@
             }
 
             if (this.settings.weaponZoom !== 1.0 && this.me.aimVal < 1) {
-                if(this.renderer.camera) this.renderer.camera.zoom = this.settings.weaponZoom;
+                if (this.renderer.camera) this.renderer.camera.zoom = this.settings.weaponZoom;
             } else if (this.renderer.camera && this.renderer.camera.zoom !== 1.0) {
                 this.renderer.camera.zoom = 1.0;
             }
@@ -523,7 +583,7 @@
                 this.lastWireframeState = this.settings.wireframeEnabled;
                 if (this.renderer.scene) {
                     this.renderer.scene.traverse(child => {
-                        if (child.material && child.type == 'Mesh' && child.name != '' && child.isObject3D && !child.isModel && child.isMesh){
+                        if (child.material && child.type == 'Mesh' && child.name != '' && child.isObject3D && !child.isModel && child.isMesh) {
                             if (Array.isArray(child.material)) { for (const material of child.material) material.wireframe = this.settings.wireframeEnabled; }
                             else child.material.wireframe = this.settings.wireframeEnabled;
                         }
@@ -541,10 +601,90 @@
                 this.ctx.shadowColor = 'rgba(255, 0, 128, 1)'; this.ctx.shadowBlur = 10; this.ctx.stroke(); this.ctx.shadowBlur = 0;
             }
             for (const player of this.game.players.list) { if (player.isYou || !player.active || !player.objInstances) continue; this.drawCanvasESP(player, false); }
-            if(this.settings.espBotCheck){ for (const bot of this.game.AI.ais) { if (!bot.mesh || !bot.mesh.visible || bot.health <= 0) continue; this.drawCanvasESP(bot, true); } }
+            if (this.settings.espBotCheck) { for (const bot of this.game.AI.ais) { if (!bot.mesh || !bot.mesh.visible || bot.health <= 0) continue; this.drawCanvasESP(bot, true); } }
             CRC2d.restore.apply(this.ctx, []);
             this.ctx.strokeStyle = original_strokeStyle; this.ctx.lineWidth = original_lineWidth;
             this.ctx.font = original_font; this.ctx.fillStyle = original_fillStyle;
+        }
+
+        /**
+         * Biyomekanik İnsan Eli Aim Hesaplayıcısı (Fitts Yasası + Yay-Sönümleyici + Harmonik Gürültü)
+         */
+        computeHumanizedAngles(target, targetXDire, targetYDire) {
+            const now = performance.now();
+            const dt = Math.min(0.05, Math.max(0.001, (now - this.lastAimTime) / 1000));
+            this.lastAimTime = now;
+
+            // ADS (Dürbün) açıkken titreme ve sapma azalması
+            const adsReduction = this.me.aimVal < 1 ? (1.0 - (this.settings.adsTremorReduction / 100.0)) : 1.0;
+            const wanderScale = this.settings.aimRandomness * adsReduction * 0.012;
+
+            // Yeni hedef seçildiğinde reaksiyon/adaptasyon süresi başlat
+            if (this.legitTarget !== target) {
+                this.legitTarget = target;
+                this.lastTargetChangeTime = now;
+                // Hedef değiştiğinde hafif başlangıç sapması
+                this.aimOffset.x = (Math.random() - 0.5) * wanderScale * 1.5;
+                this.aimOffset.y = (Math.random() - 0.5) * wanderScale * 1.5;
+                // Önceki hızı koru ama sönümle (momentum)
+                this.aimVelocity.x *= 0.5;
+                this.aimVelocity.y *= 0.5;
+            }
+
+            // 1. Organik Gezinme (Smooth Harmonic Drift - Perlin benzeri sürekli dalga)
+            const t = now * 0.001 + this.noisePhase;
+            const smoothDriftY = (Math.sin(t * 1.7) * 0.6 + Math.cos(t * 3.1) * 0.4) * wanderScale;
+            const smoothDriftX = (Math.cos(t * 1.3) * 0.6 + Math.sin(t * 2.7) * 0.4) * wanderScale;
+
+            // Hedefe yaklaştıkça gezinme (wander) azalsın ki mermiler ıskalamasın
+            const currentY = this.controls.object.rotation.y;
+            const currentX = this.controls[this.vars.pchObjc].rotation.x;
+
+            const desiredY = targetYDire + smoothDriftY;
+            const desiredX = targetXDire + smoothDriftX;
+
+            // En kısa açısal farklar
+            const diffY = Math.atan2(Math.sin(desiredY - currentY), Math.cos(desiredY - currentY));
+            const diffX = desiredX - currentX;
+            const angularDist = Math.hypot(diffX, diffY);
+
+            // 2. Reaksiyon İvmesi (Hedef ilk belirdiğinde 140ms boyunca yumuşak hızlanma - Snap önleyici)
+            const timeSinceTarget = now - this.lastTargetChangeTime;
+            const reactionRamp = Math.min(1.0, Math.pow(timeSinceTarget / 140, 1.5));
+
+            // 3. Fitts Yasası Tabanlı Yay-Sönümleyici (Spring-Damper) Hız Kontrolü
+            // flickSpeed (0-100) değerini yay sertliğine (stiffness) dönüştürüyoruz
+            const speedNorm = Math.max(0.05, this.settings.flickSpeed / 100.0);
+            // Uzak açıdayken hızlı flick, hedefe çok yakınken hassas mikro-düzeltme (Sigmoid kazanım)
+            const distanceBoost = 1.0 + Math.tanh(angularDist * 3.5) * 0.85;
+            const stiffness = (12.0 + speedNorm * 48.0) * reactionRamp * distanceBoost;
+            const damping = 0.72 - (speedNorm * 0.15); // Yüksek hızda çok hafif organik overshoot (aşım)
+
+            // Yay kuvveti ile açısal hızı güncelle
+            this.aimVelocity.y = (this.aimVelocity.y * damping) + (diffY * stiffness * dt);
+            this.aimVelocity.x = (this.aimVelocity.x * damping) + (diffX * stiffness * dt);
+
+            // Adım sınırlandırması (Aşırı sıçramayı engelle)
+            const maxStepY = Math.abs(diffY) * 1.15;
+            const maxStepX = Math.abs(diffX) * 1.15;
+            const stepY = Math.max(-maxStepY, Math.min(maxStepY, this.aimVelocity.y));
+            const stepX = Math.max(-maxStepX, Math.min(maxStepX, this.aimVelocity.x));
+
+            let newY = currentY + stepY;
+            let newX = currentX + stepX;
+
+            // 4. Fizyolojik El Titremesi (8-12 Hz İnsan Kas Tremoru Simülasyonu)
+            if (this.settings.aimTremor > 0) {
+                const tremorAmp = this.settings.aimTremor * adsReduction * 0.0025;
+                // Yalnızca fare hareket halindeyken veya hedefe odaklanırken hafif kas titremesi
+                const motionFactor = Math.min(1.0, angularDist * 8.0 + 0.25);
+                const physiologicalTremorX = Math.sin(now * 0.055) * Math.cos(now * 0.037) * tremorAmp * motionFactor;
+                const physiologicalTremorY = Math.cos(now * 0.062) * Math.sin(now * 0.041) * tremorAmp * motionFactor;
+                newX += physiologicalTremorX;
+                newY += physiologicalTremorY;
+            }
+
+            return { x: newX, y: newY };
         }
 
         onProcessInputs(inputPacket, player) {
@@ -565,7 +705,7 @@
 
             let target = null;
             if (this.settings.aimbotEnabled && (!this.settings.aimbotOnRightMouse || this.rightMouseDown)) {
-                let potentialTargets = [];
+                this.potentialTargets.length = 0;
 
                 for (let i = 0; i < this.game.players.list.length; i++) {
                     const p = this.game.players.list[i];
@@ -573,7 +713,7 @@
                         (!this.settings.aimbotTeamCheck || !this.isTeam(p)) &&
                         (!this.settings.aimbotWallCheck || this.getCanSee(p))) {
                         p.isBot = false;
-                        potentialTargets.push(p);
+                        this.potentialTargets.push(p);
                     }
                 }
 
@@ -583,26 +723,44 @@
                         if (bot.mesh && bot.mesh.visible && bot.health > 0 &&
                             (!this.settings.aimbotWallCheck || this.getCanSee(bot))) {
                             bot.isBot = true;
-                            potentialTargets.push(bot);
+                            this.potentialTargets.push(bot);
                         }
                     }
                 }
-
-                potentialTargets.sort((a, b) => this.getDistanceSq(this.me, a) - this.getDistanceSq(this.me, b));
 
                 if (this.settings.fovSize > 0) {
                     const fovRadiusSq = this.settings.fovSize * this.settings.fovSize;
                     const centerX = this.overlay.canvas.width / 2;
                     const centerY = this.overlay.canvas.height / 2;
 
-                    potentialTargets = potentialTargets.filter(p => {
+                    this.potentialTargets = this.potentialTargets.filter(p => {
                         const screenPos = this.world2Screen({ x: p.x, y: p.y, z: p.z });
                         if (!screenPos) return false;
-                        const distSq = (screenPos.x - centerX)**2 + (screenPos.y - centerY)**2;
+                        const distSq = (screenPos.x - centerX) ** 2 + (screenPos.y - centerY) ** 2;
                         return distSq <= fovRadiusSq;
                     });
                 }
-                target = potentialTargets[0] || null;
+
+                // Legit Aim açıkken ekran merkezine (crosshair'e) en yakın hedefe öncelik ver (İnsan gözü seçimi)
+                if (this.settings.legitAimbot && this.potentialTargets.length > 1) {
+                    const centerX = this.overlay.canvas.width / 2;
+                    const centerY = this.overlay.canvas.height / 2;
+                    this.potentialTargets.sort((a, b) => {
+                        // Mevcut hedefi koruma eğilimi (Target Stickiness)
+                        if (a === this.legitTarget) return -1;
+                        if (b === this.legitTarget) return 1;
+                        const spA = this.world2Screen(a);
+                        const spB = this.world2Screen(b);
+                        if (!spA || !spB) return this.getDistanceSq(this.me, a) - this.getDistanceSq(this.me, b);
+                        const fovDistA = (spA.x - centerX) ** 2 + (spA.y - centerY) ** 2;
+                        const fovDistB = (spB.x - centerX) ** 2 + (spB.y - centerY) ** 2;
+                        return fovDistA - fovDistB;
+                    });
+                } else {
+                    this.potentialTargets.sort((a, b) => this.getDistanceSq(this.me, a) - this.getDistanceSq(this.me, b));
+                }
+
+                target = this.potentialTargets[0] || null;
             }
 
             if (target && this.me.reloadTimer === 0 && this.game.gameState !== 4 && this.game.gameState !== 5) {
@@ -611,51 +769,24 @@
 
                 if (isMelee && distance > (this.me.weapon.canThrow ? throwRange : closeRange)) { }
                 else {
+                    // Hareketli hedef için çok hafif hız tahmini (Velocity Lead - Legit modda daha doğal takip sağlar)
+                    const leadFactor = this.settings.legitAimbot ? 1.35 : 0;
+                    const predX = target.x + (target.velocity?.x || 0) * leadFactor;
+                    const predZ = target.z + (target.velocity?.z || 0) * leadFactor;
+
                     const targetY = target.isBot ? (target.y - target.dat.mSize / 2) : (target.y - target.crouchVal * 3 + this.me.crouchVal * 3 + this.settings.aimOffset);
-                    const yDire = this.getDirection(this.me.z, this.me.x, target.z, target.x);
-                    const xDire = this.getXDirection(this.me.x, this.me.y, this.me.z, target.x, targetY, target.z) - (0.3 * this.me.recoilAnimY);
+                    const yDire = this.getDirection(this.me.z, this.me.x, predZ, predX);
+                    const xDire = this.getXDirection(this.me.x, this.me.y, this.me.z, predX, targetY, predZ) - (0.3 * this.me.recoilAnimY);
 
                     if (this.settings.legitAimbot) {
-                        let adsReduction = 1.0; if (this.me.aimVal < 1) { adsReduction = 1.0 - (this.settings.adsTremorReduction / 100.0); }
-
-                        if (this.legitTarget !== target) {
-                            this.legitTarget = target;
-                            this.lastTargetChangeTime = Date.now();
-                            this.aimOffset.x = (Math.random() - 0.5) * (this.settings.aimRandomness * adsReduction);
-                            this.aimOffset.y = (Math.random() - 0.5) * (this.settings.aimRandomness * adsReduction);
-                        }
-
-                        const wanderAmount = this.settings.aimRandomness * adsReduction;
-                        this.aimOffset.x += (Math.random() - 0.5) * wanderAmount * 0.1;
-                        this.aimOffset.y += (Math.random() - 0.5) * wanderAmount * 0.1;
-                        this.aimOffset.x = Math.max(-wanderAmount, Math.min(wanderAmount, this.aimOffset.x));
-                        this.aimOffset.y = Math.max(-wanderAmount, Math.min(wanderAmount, this.aimOffset.y));
-
-                        const currentY = this.controls.object.rotation.y;
-                        const currentX = this.controls[this.vars.pchObjc].rotation.x;
-
-                        const finalX = xDire + this.aimOffset.y * 0.01;
-                        const finalY = yDire + this.aimOffset.x * 0.01;
-
-                        const flickFactor = this.settings.flickSpeed * 0.01;
-
-                        const shortestAngleY = Math.atan2(Math.sin(finalY - currentY), Math.cos(finalY - currentY));
-                        let newY = currentY + shortestAngleY * flickFactor;
-
-                        const shortestAngleX = finalX - currentX;
-                        let newX = currentX + shortestAngleX * flickFactor;
-
-                        if (this.settings.aimTremor > 0) {
-                            const tremorAmount = this.settings.aimTremor * adsReduction;
-                            newX += (Math.random() - 0.5) * tremorAmount * 0.01;
-                            newY += (Math.random() - 0.5) * tremorAmount * 0.01;
-                        }
-
-                        if (!this.settings.superSilentEnabled) this.lookDir(newX, newY);
-                        inputPacket[gameInputIndices.xdir] = newX * 1000; inputPacket[gameInputIndices.ydir] = newY * 1000;
+                        const humanized = this.computeHumanizedAngles(target, xDire, yDire);
+                        if (!this.settings.superSilentEnabled) this.lookDir(humanized.x, humanized.y);
+                        inputPacket[gameInputIndices.xdir] = humanized.x * 1000;
+                        inputPacket[gameInputIndices.ydir] = humanized.y * 1000;
                     } else {
                         if (!this.settings.superSilentEnabled) this.lookDir(xDire, yDire);
-                        inputPacket[gameInputIndices.xdir] = xDire * 1000; inputPacket[gameInputIndices.ydir] = yDire * 1000;
+                        inputPacket[gameInputIndices.xdir] = xDire * 1000;
+                        inputPacket[gameInputIndices.ydir] = yDire * 1000;
                     }
 
                     if (this.settings.autoFireEnabled) {
@@ -667,7 +798,7 @@
                             if (distance <= closeRange && this.me.reloadTimer === 0 && !this.me.didShoot && this.me.aimVal === 0 && (!this.settings.legitAimbot || (inCast && canSee))) { inputPacket[gameInputIndices.shoot] = 1; }
                             else if (distance <= throwRange && this.me.weapon.canThrow) {
                                 inputPacket[gameInputIndices.scope] = 1;
-                                if(this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot && (!this.settings.legitAimbot || (inCast && canSee))){ inputPacket[gameInputIndices.shoot] = 1; }
+                                if (this.me.aimVal === 0 && this.me.reloadTimer === 0 && !this.me.didShoot && (!this.settings.legitAimbot || (inCast && canSee))) { inputPacket[gameInputIndices.shoot] = 1; }
                             }
                         } else {
                             if (!this.me.weapon.noAim) inputPacket[gameInputIndices.scope] = 1;
@@ -677,10 +808,12 @@
                 }
             } else if (!target && this.game.gameState !== 4 && this.game.gameState !== 5) {
                 this.legitTarget = null;
+                this.aimVelocity.x = 0;
+                this.aimVelocity.y = 0;
                 if (!this.settings.superSilentEnabled && !this.settings.antiAimEnabled) {
                     this.resetLookAt();
                 }
-                if (this.settings.antiAimEnabled && !this.me.didShoot && this.me.aimVal !== 0){ inputPacket[gameInputIndices.xdir] = -Math.PI * 500; }
+                if (this.settings.antiAimEnabled && !this.me.didShoot && this.me.aimVal !== 0) { inputPacket[gameInputIndices.xdir] = -Math.PI * 500; }
             } else if (this.me.weapon.nAuto && this.me.didShoot) {
                 inputPacket[gameInputIndices.shoot] = 0; inputPacket[gameInputIndices.scope] = 0;
                 this.me.inspecting = false; this.me.inspectX = 0;
@@ -825,11 +958,11 @@
 .anonimbiri-notify-action-btn:hover{background:#e84393;color:#fff;}
 `;
 
-        const style = document.createElement('style');
-        style.textContent = menuCSS;
-        document.head.appendChild(style);
+            const style = document.createElement('style');
+            style.textContent = menuCSS;
+            document.head.appendChild(style);
 
-        const hotkeyModalHTML = `
+            const hotkeyModalHTML = `
               <div class="anonimbiri-hotkey-modal" id="anonimbiri-hotkeyModal">
                   <div class="anonimbiri-hotkey-content">
                       <h2>🌸 Press a Key</h2>
@@ -837,37 +970,37 @@
                       <p>ESC to cancel · DEL to unbind</p>
                   </div>
               </div>`;
-        const modalContainer = document.createElement('div');
-        modalContainer.innerHTML = hotkeyModalHTML;
-        document.body.appendChild(modalContainer);
-        this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = hotkeyModalHTML;
+            document.body.appendChild(modalContainer);
+            this.hotkeyModal = document.getElementById('anonimbiri-hotkeyModal');
 
-        this.GUI.windowIndex = window.windows.length + 1;
-        this.GUI.windowObj = {
-            closed: false,
-            header: "🌸 AimbaeShiro 🌸",
-            html: "",
-            extraCls: "anonimbiri-menu-container",
-            gen: () => this.getGuiHtml(),
-            hideScroll: true,
-            height: 'calc(100% - 120px)',
-            width: 850,
-        };
+            this.GUI.windowIndex = window.windows.length + 1;
+            this.GUI.windowObj = {
+                closed: false,
+                header: "🌸 AimbaeShiro 🌸",
+                html: "",
+                extraCls: "anonimbiri-menu-container",
+                gen: () => this.getGuiHtml(),
+                hideScroll: true,
+                height: 'calc(100% - 120px)',
+                width: 850,
+            };
 
-        Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
+            Object.defineProperty(window.windows, window.windows.length, { value: this.GUI.windowObj });
 
-        this.waitFor(() => document.querySelector('.headerBarRight')).then(headerRight => {
-            if (headerRight && !document.getElementById('shiro-menu-button')) {
-                const btn = document.createElement("div");
-                btn.id = 'shiro-menu-button';
-                btn.innerHTML = `<div class="shiro-icon"></div><span class="shiro-label">AimbaeShiro</span>`;
+            this.waitFor(() => document.querySelector('.headerBarRight')).then(headerRight => {
+                if (headerRight && !document.getElementById('shiro-menu-button')) {
+                    const btn = document.createElement("div");
+                    btn.id = 'shiro-menu-button';
+                    btn.innerHTML = `<div class="shiro-icon"></div><span class="shiro-label">AimbaeShiro</span>`;
 
-                btn.addEventListener("click", () => this.showGUI());
-                btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
-                headerRight.prepend(btn);
-            }
-        });
-    }
+                    btn.addEventListener("click", () => this.showGUI());
+                    btn.addEventListener('mouseenter', () => { if (window.SOUND) window.SOUND.play('hover_0', 0.1); });
+                    headerRight.prepend(btn);
+                }
+            });
+        }
 
         getGuiHtml() {
             const I = {
@@ -896,20 +1029,20 @@
             };
 
             const tips = {
-                aimbotEnabled:'Master aimbot toggle.', aimbotOnRightMouse:'Only activate when right mouse held.',
-                aimbotWallCheck:'No target through walls.', aimbotWallBangs:'Shoot through penetrable walls.',
-                aimbotTeamCheck:'No target teammates.', aimbotBotCheck:'Target AI/bots.',
-                autoFireEnabled:'Auto fires when target acquired.', superSilentEnabled:'Aims without moving camera.',
-                fovSize:'FOV radius. 0 = full screen.', drawFovCircle:'Displays FOV circle.',
-                espTeamCheck:'No ESP for teammates.', espBotCheck:'ESP for AI/bots.',
-                espLines:'Line from bottom to enemies.', espSquare:'Box around enemies.',
-                espNameTags:'Name, health, weapon info.', espWeaponIcons:'Weapon icon in info.',
-                espInfoBackground:'Background for info panel.', espColor:'ESP line color.',
-                boxColor:'Box & info color.', botColor:'Bot ESP color.',
-                wireframeEnabled:'Wireframe rendering.', unlockSkins:'Client-side skin unlocker.',
-                bhopEnabled:'Hold space auto-jump.', antiAimEnabled:'Makes you harder to hit.',
-                autoNuke:'Auto nuke when available.', antikick:'Prevents inactivity kick.',
-                autoReload:'Auto reload when empty.',
+                aimbotEnabled: 'Master aimbot toggle.', aimbotOnRightMouse: 'Only activate when right mouse held.',
+                aimbotWallCheck: 'No target through walls.', aimbotWallBangs: 'Shoot through penetrable walls.',
+                aimbotTeamCheck: 'No target teammates.', aimbotBotCheck: 'Target AI/bots.',
+                autoFireEnabled: 'Auto fires when target acquired.', superSilentEnabled: 'Aims without moving camera.',
+                fovSize: 'FOV radius. 0 = full screen.', drawFovCircle: 'Displays FOV circle.',
+                espTeamCheck: 'No ESP for teammates.', espBotCheck: 'ESP for AI/bots.',
+                espLines: 'Line from bottom to enemies.', espSquare: 'Box around enemies.',
+                espNameTags: 'Name, health, weapon info.', espWeaponIcons: 'Weapon icon in info.',
+                espInfoBackground: 'Background for info panel.', espColor: 'ESP line color.',
+                boxColor: 'Box & info color.', botColor: 'Bot ESP color.',
+                wireframeEnabled: 'Wireframe rendering.', unlockSkins: 'Client-side skin unlocker.',
+                bhopEnabled: 'Hold space auto-jump.', antiAimEnabled: 'Makes you harder to hit.',
+                autoNuke: 'Auto nuke when available.', antikick: 'Prevents inactivity kick.',
+                autoReload: 'Auto reload when empty.',
                 thirdPersonEnabled: 'Play in 3rd person view.',
                 alwaysTrail: 'Always show bullet trails.',
                 weaponZoom: 'Adjust ADS zoom level (1 = default).'
@@ -922,7 +1055,7 @@
             }, 100);
 
             let petals = '';
-            for (let i = 0; i < 15; i++) petals += `<div class="anonimbiri-petal" style="left:${Math.random()*100}%;top:${Math.random()*40}%;width:${5+Math.random()*7}px;height:${5+Math.random()*7}px;animation-delay:${Math.random()*8}s;animation-duration:${3+Math.random()*5}s"></div>`;
+            for (let i = 0; i < 15; i++) petals += `<div class="anonimbiri-petal" style="left:${Math.random() * 100}%;top:${Math.random() * 40}%;width:${5 + Math.random() * 7}px;height:${5 + Math.random() * 7}px;animation-delay:${Math.random() * 8}s;animation-duration:${3 + Math.random() * 5}s"></div>`;
 
             return `
                 <div class="anonimbiri-menu-header">${petals}</div>
@@ -935,54 +1068,54 @@
                     <div class="anonimbiri-tab-content">
                         <div class="anonimbiri-tab-pane active" id="anonimbiri-tab-aimbot">
                             <div class="anonimbiri-section">General</div>
-                            ${this.createMenuItemHTML('toggle','aimbotEnabled','Aimbot Enabled', I.aimbot, tips.aimbotEnabled)}
-                            ${this.createMenuItemHTML('toggle','aimbotOnRightMouse','Right Mouse Trigger', I.rightMouse, tips.aimbotOnRightMouse)}
-                            ${this.createMenuItemHTML('toggle','autoFireEnabled','Auto Fire', I.autoFire, tips.autoFireEnabled)}
-                            ${this.createMenuItemHTML('toggle','superSilentEnabled','Super Silent Aim', I.superSilent, tips.superSilentEnabled)}
+                            ${this.createMenuItemHTML('toggle', 'aimbotEnabled', 'Aimbot Enabled', I.aimbot, tips.aimbotEnabled)}
+                            ${this.createMenuItemHTML('toggle', 'aimbotOnRightMouse', 'Right Mouse Trigger', I.rightMouse, tips.aimbotOnRightMouse)}
+                            ${this.createMenuItemHTML('toggle', 'autoFireEnabled', 'Auto Fire', I.autoFire, tips.autoFireEnabled)}
+                            ${this.createMenuItemHTML('toggle', 'superSilentEnabled', 'Super Silent Aim', I.superSilent, tips.superSilentEnabled)}
                             <div class="anonimbiri-section">Checks</div>
-                            ${this.createMenuItemHTML('toggle','aimbotWallCheck','Wall Check', I.wall, tips.aimbotWallCheck)}
-                            ${this.createMenuItemHTML('toggle','aimbotWallBangs','WallBangs', I.wallOff, tips.aimbotWallBangs)}
-                            ${this.createMenuItemHTML('toggle','aimbotTeamCheck','Team Check', I.teamCheck, tips.aimbotTeamCheck)}
-                            ${this.createMenuItemHTML('toggle','aimbotBotCheck','Bot Aim', I.robot, tips.aimbotBotCheck)}
-                            <div class="anonimbiri-section">Legit Aim</div>
-                            ${this.createMenuItemHTML('toggle','legitAimbot','Legit AI Aim', I.teamCheck, 'Simulates human-like aiming.')}
-                            ${this.createMenuItemHTML('slider','flickSpeed','Flick Speed', I.autoFire, 'Flick speed control.', 0, 100, 1)}
-                            ${this.createMenuItemHTML('slider','adsTremorReduction','ADS Stability %', I.aimbot, 'Reduces tremor when ADS.', 0, 100, 1)}
-                            ${this.createMenuItemHTML('slider','aimRandomness','Aim Wandering', I.line, 'Simulates imperfect aim.', 0, 5, 0.1)}
-                            ${this.createMenuItemHTML('slider','aimTremor','Aim Tremor', I.wireframe, 'Hand tremor simulation.', 0, 5, 0.1)}
+                            ${this.createMenuItemHTML('toggle', 'aimbotWallCheck', 'Wall Check', I.wall, tips.aimbotWallCheck)}
+                            ${this.createMenuItemHTML('toggle', 'aimbotWallBangs', 'WallBangs', I.wallOff, tips.aimbotWallBangs)}
+                            ${this.createMenuItemHTML('toggle', 'aimbotTeamCheck', 'Team Check', I.teamCheck, tips.aimbotTeamCheck)}
+                            ${this.createMenuItemHTML('toggle', 'aimbotBotCheck', 'Bot Aim', I.robot, tips.aimbotBotCheck)}
+                            <div class="anonimbiri-section">Legit Aim (Biomechanical Humanizer)</div>
+                            ${this.createMenuItemHTML('toggle', 'legitAimbot', 'Legit AI Aim', I.teamCheck, 'Spring-damper Fitts Law & harmonic hand tremor.')}
+                            ${this.createMenuItemHTML('slider', 'flickSpeed', 'Flick Speed', I.autoFire, 'Flick stiffness & speed control.', 0, 100, 1)}
+                            ${this.createMenuItemHTML('slider', 'adsTremorReduction', 'ADS Stability %', I.aimbot, 'Reduces tremor when ADS.', 0, 100, 1)}
+                            ${this.createMenuItemHTML('slider', 'aimRandomness', 'Aim Wandering', I.line, 'Smooth organic drift.', 0, 5, 0.1)}
+                            ${this.createMenuItemHTML('slider', 'aimTremor', 'Aim Tremor', I.wireframe, '8-12Hz physiological hand tremor.', 0, 5, 0.1)}
                             <div class="anonimbiri-section">Targeting</div>
-                            ${this.createMenuItemHTML('slider','fovSize','FOV Size', I.fov, tips.fovSize, 0, 300, 1)}
-                            ${this.createMenuItemHTML('toggle','drawFovCircle','Draw FOV Circle', I.espSquare, tips.drawFovCircle)}
+                            ${this.createMenuItemHTML('slider', 'fovSize', 'FOV Size', I.fov, tips.fovSize, 0, 300, 1)}
+                            ${this.createMenuItemHTML('toggle', 'drawFovCircle', 'Draw FOV Circle', I.espSquare, tips.drawFovCircle)}
                         </div>
                         <div class="anonimbiri-tab-pane" id="anonimbiri-tab-esp">
                             <div class="anonimbiri-section">Visuals</div>
-                            ${this.createMenuItemHTML('toggle','thirdPersonEnabled','Third Person', I.robot, tips.thirdPersonEnabled)}
-                            ${this.createMenuItemHTML('toggle','alwaysTrail','Weapon Trails', I.line, tips.alwaysTrail)}
-                            ${this.createMenuItemHTML('slider','weaponZoom','Weapon Zoom', I.fov, tips.weaponZoom, 0.1, 5.0, 0.1)}
-                            ${this.createMenuItemHTML('toggle','espSquare','ESP Box', I.espSquare, tips.espSquare)}
-                            ${this.createMenuItemHTML('toggle','espLines','ESP Lines', I.line, tips.espLines)}
-                            ${this.createMenuItemHTML('toggle','espNameTags','Name Tags', I.nameTags, tips.espNameTags)}
-                            ${this.createMenuItemHTML('toggle','espWeaponIcons','Weapon Icons', I.weaponIcons, tips.espWeaponIcons)}
-                            ${this.createMenuItemHTML('toggle','espInfoBackground','Info Background', I.espInfoBg, tips.espInfoBackground)}
-                            ${this.createMenuItemHTML('toggle','wireframeEnabled','Wireframe', I.wireframe, tips.wireframeEnabled)}
+                            ${this.createMenuItemHTML('toggle', 'thirdPersonEnabled', 'Third Person', I.robot, tips.thirdPersonEnabled)}
+                            ${this.createMenuItemHTML('toggle', 'alwaysTrail', 'Weapon Trails', I.line, tips.alwaysTrail)}
+                            ${this.createMenuItemHTML('slider', 'weaponZoom', 'Weapon Zoom', I.fov, tips.weaponZoom, 0.1, 5.0, 0.1)}
+                            ${this.createMenuItemHTML('toggle', 'espSquare', 'ESP Box', I.espSquare, tips.espSquare)}
+                            ${this.createMenuItemHTML('toggle', 'espLines', 'ESP Lines', I.line, tips.espLines)}
+                            ${this.createMenuItemHTML('toggle', 'espNameTags', 'Name Tags', I.nameTags, tips.espNameTags)}
+                            ${this.createMenuItemHTML('toggle', 'espWeaponIcons', 'Weapon Icons', I.weaponIcons, tips.espWeaponIcons)}
+                            ${this.createMenuItemHTML('toggle', 'espInfoBackground', 'Info Background', I.espInfoBg, tips.espInfoBackground)}
+                            ${this.createMenuItemHTML('toggle', 'wireframeEnabled', 'Wireframe', I.wireframe, tips.wireframeEnabled)}
                             <div class="anonimbiri-section">Filters</div>
-                            ${this.createMenuItemHTML('toggle','espTeamCheck','Team Check', I.teamCheck, tips.espTeamCheck)}
-                            ${this.createMenuItemHTML('toggle','espBotCheck','Bot ESP', I.robot, tips.espBotCheck)}
+                            ${this.createMenuItemHTML('toggle', 'espTeamCheck', 'Team Check', I.teamCheck, tips.espTeamCheck)}
+                            ${this.createMenuItemHTML('toggle', 'espBotCheck', 'Bot ESP', I.robot, tips.espBotCheck)}
                             <div class="anonimbiri-section">Colors</div>
-                            ${this.createMenuItemHTML('color','espColor','ESP Color', I.palette, tips.espColor)}
-                            ${this.createMenuItemHTML('color','boxColor','Box Color', I.palette, tips.boxColor)}
-                            ${this.createMenuItemHTML('color','botColor','Bot Color', I.palette, tips.botColor)}
+                            ${this.createMenuItemHTML('color', 'espColor', 'ESP Color', I.palette, tips.espColor)}
+                            ${this.createMenuItemHTML('color', 'boxColor', 'Box Color', I.palette, tips.boxColor)}
+                            ${this.createMenuItemHTML('color', 'botColor', 'Bot Color', I.palette, tips.botColor)}
                         </div>
                         <div class="anonimbiri-tab-pane" id="anonimbiri-tab-misc">
                             <div class="anonimbiri-section">Movement</div>
-                            ${this.createMenuItemHTML('toggle','bhopEnabled','Bunny Hop', I.bounce, tips.bhopEnabled)}
+                            ${this.createMenuItemHTML('toggle', 'bhopEnabled', 'Bunny Hop', I.bounce, tips.bhopEnabled)}
                             <div class="anonimbiri-section">Combat</div>
-                            ${this.createMenuItemHTML('toggle','antiAimEnabled','Anti-Aim', I.antiAim, tips.antiAimEnabled)}
-                            ${this.createMenuItemHTML('toggle','autoNuke','Auto Nuke', I.rocket, tips.autoNuke)}
-                            ${this.createMenuItemHTML('toggle','antikick','Anti Kick', I.antiKick, tips.antikick)}
-                            ${this.createMenuItemHTML('toggle','autoReload','Auto Reload', I.autoReload, tips.autoReload)}
+                            ${this.createMenuItemHTML('toggle', 'antiAimEnabled', 'Anti-Aim', I.antiAim, tips.antiAimEnabled)}
+                            ${this.createMenuItemHTML('toggle', 'autoNuke', 'Auto Nuke', I.rocket, tips.autoNuke)}
+                            ${this.createMenuItemHTML('toggle', 'antikick', 'Anti Kick', I.antiKick, tips.antikick)}
+                            ${this.createMenuItemHTML('toggle', 'autoReload', 'Auto Reload', I.autoReload, tips.autoReload)}
                             <div class="anonimbiri-section">Other</div>
-                            ${this.createMenuItemHTML('toggle','unlockSkins','Unlock All Skins', I.unlockSkins, tips.unlockSkins)}
+                            ${this.createMenuItemHTML('toggle', 'unlockSkins', 'Unlock All Skins', I.unlockSkins, tips.unlockSkins)}
                         </div>
                     </div>
                     <div class="anonimbiri-esp-panel">
@@ -1003,7 +1136,7 @@
             switch (type) {
                 case 'toggle':
                     if (hasHK) {
-                        const kd = this.hotkeys[setting] ? this.hotkeys[setting].replace('Key','').replace('Digit','').replace('Numpad','Num') : '-';
+                        const kd = this.hotkeys[setting] ? this.hotkeys[setting].replace('Key', '').replace('Digit', '').replace('Numpad', 'Num') : '-';
                         const bc = this.hotkeys[setting] ? ' bound' : '';
                         controlHTML = `<button class="anonimbiri-hk-btn${bc}" data-hk="${setting}">${kd}</button>`;
                     }
@@ -1119,11 +1252,11 @@
                         if (menu) { const hkBtn = menu.querySelector(`.anonimbiri-hk-btn[data-hk="${this.currentBindingSetting}"]`); if (hkBtn) { hkBtn.textContent = '-'; hkBtn.classList.remove('bound'); } }
                         this.hideHotkeyModal(); return;
                     }
-                    if (Object.values(this.hotkeys).includes(e.code)) { this.notify({ title: "Hotkey Error", message: "Key already assigned!"}); return; }
+                    if (Object.values(this.hotkeys).includes(e.code)) { this.notify({ title: "Hotkey Error", message: "Key already assigned!" }); return; }
                     this.hotkeys[this.currentBindingSetting] = e.code;
                     this.saveSettings('aimbaeshiro_hotkeys', this.hotkeys);
                     const menu = document.querySelector('.anonimbiri-menu-container');
-                    if(menu) { const hkBtn = menu.querySelector(`.anonimbiri-hk-btn[data-hk="${this.currentBindingSetting}"]`); if(hkBtn) { hkBtn.textContent = e.code.replace('Key','').replace('Digit','').replace('Numpad','Num'); hkBtn.classList.add('bound'); } }
+                    if (menu) { const hkBtn = menu.querySelector(`.anonimbiri-hk-btn[data-hk="${this.currentBindingSetting}"]`); if (hkBtn) { hkBtn.textContent = e.code.replace('Key', '').replace('Digit', '').replace('Numpad', 'Num'); hkBtn.classList.add('bound'); } }
                     this.hideHotkeyModal(); return;
                 }
 
@@ -1134,7 +1267,7 @@
                     else if (this.settings.hasOwnProperty(action)) {
                         this.settings[action] = !this.settings[action];
                         this.saveSettings('aimbaeshiro_settings', this.settings);
-                        this.notify({ title: "Toggled", message: `${action.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: ${this.settings[action] ? 'ON' : 'OFF'}`});
+                        this.notify({ title: "Toggled", message: `${action.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}: ${this.settings[action] ? 'ON' : 'OFF'}` });
                         const menu = document.querySelector('.anonimbiri-menu-container');
                         if (menu) {
                             const item = menu.querySelector(`.anonimbiri-menu-item[data-setting="${action}"]`);
@@ -1159,11 +1292,11 @@
 
         isDefined(val) { return val !== undefined && val !== null; }
         isTeam(player) { return this.me && this.me.team ? this.me.team === player.team : false; }
-        getDistanceSq(p1, p2) { return (p2.x - p1.x)**2 + (p2.y - p1.y)**2 + (p2.z - p1.z)**2; }
+        getDistanceSq(p1, p2) { return (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2 + (p2.z - p1.z) ** 2; }
         getDirection(z1, x1, z2, x2) { return Math.atan2(x1 - x2, z1 - z2); }
-        getXDirection(t,e,o,i,s,n){const r=s-e,a=Math.sqrt((i-t)**2+(s-e)**2+(n-o)**2);return Math.asin(r/a)}
+        getXDirection(t, e, o, i, s, n) { const r = s - e, a = Math.sqrt((i - t) ** 2 + (s - e) ** 2 + (n - o) ** 2); return Math.asin(r / a); }
 
-        containsPoint(point) { let planes = this.renderer.frustum.planes; for (let i = 0; i < 6; i ++) { if (planes[i].distanceToPoint(point) < 0) { return false; } } return true; }
+        containsPoint(point) { let planes = this.renderer.frustum.planes; for (let i = 0; i < 6; i++) { if (planes[i].distanceToPoint(point) < 0) { return false; } } return true; }
 
         lineInRect(lx1, lz1, ly1, dx, dz, dy, x1, z1, y1, x2, z2, y2) {
             let t1 = (x1 - lx1) * dx; let t2 = (x2 - lx1) * dx; let t3 = (y1 - ly1) * dy; let t4 = (y2 - ly1) * dy;
@@ -1176,7 +1309,7 @@
         getCanSee(player, boxSize) {
             const from = this.me; if (!from || !this.game?.map?.manager?.objects) return true;
             boxSize = boxSize || 0; const toX = player.x, toY = player.y, toZ = player.z; let penetrableWallsHit = 0;
-            for (let obj, dist = Math.sqrt((toX-from.x)**2+(toY-from.y)**2+(toZ-from.z)**2), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(Math.sqrt((toX-from.x)**2+(toZ-from.z)**2), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
+            for (let obj, dist = Math.sqrt((toX - from.x) ** 2 + (toY - from.y) ** 2 + (toZ - from.z) ** 2), xDr = this.getDirection(from.z, from.x, toZ, toX), yDr = this.getDirection(Math.sqrt((toX - from.x) ** 2 + (toZ - from.z) ** 2), toY, 0, from.y), dx = 1 / (dist * Math.sin(xDr - Math.PI) * Math.cos(yDr)), dz = 1 / (dist * Math.cos(xDr - Math.PI) * Math.cos(yDr)), dy = 1 / (dist * Math.sin(yDr)), yOffset = from.y + (from.height || this.PLAYER_HEIGHT) - this.CAMERA_HEIGHT, i = 0; i < this.game.map.manager.objects.length; ++i) {
                 let tmpDst;
                 if (!(obj = this.game.map.manager.objects[i]).noShoot && obj.active && obj.transparent !== false &&
                     (tmpDst = this.lineInRect(from.x, from.z, yOffset, dx, dz, dy, obj.x - Math.max(0, obj.width - boxSize), obj.z - Math.max(0, obj.length - boxSize), obj.y - Math.max(0, obj.height - boxSize), obj.x + Math.max(0, obj.width - boxSize), obj.z + Math.max(0, obj.length - boxSize), obj.y + Math.max(0, obj.height - boxSize))) && 1 > tmpDst) {
@@ -1226,23 +1359,23 @@
 
         drawCanvasESP(player, isBot) {
             if (this.settings.espTeamCheck && this.isTeam(player)) return;
-            const playerPos = { x: player.x, y: player.y, z: player.z };
+            const px = player.x, py = player.y, pz = player.z;
             const effectiveHeight = isBot ? player.dat.mSize : (player.height || this.PLAYER_HEIGHT) - ((player.crouchVal || 0) * this.CROUCH_FACTOR);
             const halfWidth = isBot ? (player.dat.mSize * 0.4) / 2 : this.PLAYER_WIDTH / 2;
-            const corners = [
-                { x: playerPos.x - halfWidth, y: playerPos.y, z: playerPos.z - halfWidth },
-                { x: playerPos.x + halfWidth, y: playerPos.y, z: playerPos.z - halfWidth },
-                { x: playerPos.x - halfWidth, y: playerPos.y, z: playerPos.z + halfWidth },
-                { x: playerPos.x + halfWidth, y: playerPos.y, z: playerPos.z + halfWidth },
-                { x: playerPos.x - halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z - halfWidth },
-                { x: playerPos.x + halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z - halfWidth },
-                { x: playerPos.x - halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z + halfWidth },
-                { x: playerPos.x + halfWidth, y: playerPos.y + effectiveHeight, z: playerPos.z + halfWidth },
-            ];
+
+            const c = this.boxCorners;
+            c[0].x = px - halfWidth; c[0].y = py;                   c[0].z = pz - halfWidth;
+            c[1].x = px + halfWidth; c[1].y = py;                   c[1].z = pz - halfWidth;
+            c[2].x = px - halfWidth; c[2].y = py;                   c[2].z = pz + halfWidth;
+            c[3].x = px + halfWidth; c[3].y = py;                   c[3].z = pz + halfWidth;
+            c[4].x = px - halfWidth; c[4].y = py + effectiveHeight; c[4].z = pz - halfWidth;
+            c[5].x = px + halfWidth; c[5].y = py + effectiveHeight; c[5].z = pz - halfWidth;
+            c[6].x = px - halfWidth; c[6].y = py + effectiveHeight; c[6].z = pz + halfWidth;
+            c[7].x = px + halfWidth; c[7].y = py + effectiveHeight; c[7].z = pz + halfWidth;
 
             let xmin = Infinity, ymin = Infinity, xmax = -Infinity, ymax = -Infinity, onScreen = false;
-            for (let i = 0; i < corners.length; i++) {
-                const screenPos = this.world2Screen(corners[i]);
+            for (let i = 0; i < 8; i++) {
+                const screenPos = this.world2Screen(c[i]);
                 if (screenPos) {
                     onScreen = true;
                     xmin = Math.min(xmin, screenPos.x);
@@ -1257,7 +1390,6 @@
 
             if (this.settings.espLines) {
                 const startX = this.overlay.canvas.width / 2, startY = this.overlay.canvas.height, endX = xmin + boxWidth / 2, endY = ymax, trailColor = isBot ? this.settings.botColor : this.settings.espColor;
-                const hexToRgba = (hex, alpha) => { let r=0,g=0,b=0; if (hex.length == 7) { r=parseInt(hex.slice(1,3),16); g=parseInt(hex.slice(3,5),16); b=parseInt(hex.slice(5,7),16); } return `rgba(${r},${g},${b},${alpha})`; };
                 const gradient = this.ctx.createLinearGradient(startX, startY, endX, endY);
                 gradient.addColorStop(0, hexToRgba(trailColor, 0.7)); gradient.addColorStop(1, hexToRgba(trailColor, 0));
                 this.ctx.lineWidth = 2.5; this.ctx.strokeStyle = gradient; this.ctx.shadowColor = trailColor; this.ctx.shadowBlur = 15;
@@ -1274,7 +1406,7 @@
                 const barX = xmin - 7; const barY = ymin; const barWidth = 4; const barHeight = boxHeight;
                 this.ctx.fillStyle = "rgba(0,0,0,0.5)"; CRC2d.fillRect.apply(this.ctx, [barX, barY, barWidth, barHeight]);
                 this.ctx.fillStyle = healthPercentage > 0.75 ? "#43A047" : healthPercentage > 0.4 ? "#FDD835" : "#E53935";
-                CRC2d.fillRect.apply(this.ctx, [barX, barY + barHeight * (1-healthPercentage), barWidth, barHeight * healthPercentage]);
+                CRC2d.fillRect.apply(this.ctx, [barX, barY + barHeight * (1 - healthPercentage), barWidth, barHeight * healthPercentage]);
                 this.ctx.font = "bold 11px Rajdhani, sans-serif"; this.ctx.textAlign = "right"; this.ctx.fillStyle = "#FFFFFF";
                 this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
                 CRC2d.fillText.apply(this.ctx, [`♥ ${Math.round(player.health)}`, barX - 4, barY + 11]);
@@ -1321,7 +1453,7 @@
                 CRC2d.fillText.apply(this.ctx, [fullText, infoBoxX + padding, infoBoxY + infoBoxHeight / 2 + 4]);
                 if (weaponIcon && weaponIcon.complete && iconWidth > 0) { this.ctx.drawImage(weaponIcon, infoBoxX + padding + fullTextWidth + padding, infoBoxY + (infoBoxHeight - iconHeight) / 2, iconWidth, iconHeight); }
                 this.ctx.shadowBlur = 0;
-                const distance = Math.round(Math.sqrt((this.me.x-player.x)**2+(this.me.y-player.y)**2+(this.me.z-player.z)**2) / 10);
+                const distance = Math.round(Math.sqrt((this.me.x - player.x) ** 2 + (this.me.y - player.y) ** 2 + (this.me.z - player.z) ** 2) / 10);
                 this.ctx.textAlign = "center"; this.ctx.fillStyle = "#FFFFFF"; this.ctx.shadowColor = '#000000'; this.ctx.shadowBlur = 4;
                 CRC2d.fillText.apply(this.ctx, [`[${distance}m]`, xmin + boxWidth / 2, ymax + 14]);
             }
